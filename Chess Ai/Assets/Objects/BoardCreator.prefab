@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8308404479879245100}
   - component: {fileID: 2081417997507274343}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: BoardCreator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44,3 +44,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tilePrefab: {fileID: 6269646055644285269, guid: f4afd7d07886a3f4ca63f87f317995a0, type: 3}
+  colorLight: {r: 0.64997363, g: 0.7924528, b: 0.2878248, a: 1}
+  colorDark: {r: 0.2730268, g: 0.49056602, b: 0.23834105, a: 1}
+  Scale: 4
