@@ -9,7 +9,6 @@ public class movePieces : MonoBehaviour
     Vector3 originalPos;
     bool isFollowMouse = false;
 
-    private mouseBehavior mouseBehavior;
     private createPieces createPieces;
 
     //follower object
@@ -19,12 +18,11 @@ public class movePieces : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        mouseBehavior = GameObject.Find("MouseObject").GetComponent<mouseBehavior>();
         createPieces = GameObject.Find("PieceHandler").GetComponent<createPieces>();
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         if (isFollowMouse)
         {
@@ -35,8 +33,9 @@ public class movePieces : MonoBehaviour
     private void OnMouseDown()
     {
         //if the mouse is not holding anything and not selecting an empty space
-        if (!mouseBehavior.isHolding && !createPieces.getCoordinateEmpty(position))
+        if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
         {
+
             //sets the original position to reference later
             originalPos = this.transform.position;
 
@@ -54,9 +53,9 @@ public class movePieces : MonoBehaviour
         }
 
         //replaces the pieces only when the mouse is holding unto something
-        if (mouseBehavior.isHolding)
+        if (createPieces.mouseIsHolding)
         {
-            if (mouseBehavior.holding == position)
+            if (createPieces.mouseHolding == position)
             {
                 cancelMove();
                 return;
@@ -78,10 +77,10 @@ public class movePieces : MonoBehaviour
         newPiece.transform.position = mousePosition;
 
         //sets mouse object to holding an opbject
-        mouseBehavior.holding = position;
-        mouseBehavior.isHolding = true;
+        createPieces.mouseHolding = position;
+        createPieces.mouseIsHolding = true;
 
-        if (mouseBehavior.isTarget)
+        if (createPieces.mouseIsPlaced)
         {
             voidSpace();
         }
@@ -89,10 +88,10 @@ public class movePieces : MonoBehaviour
 
     void replacePiece()
     {
-        int holdingSprite = createPieces.getCoordinateSprite(mouseBehavior.holding);
+        int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
-        createPieces.swapPieces(position, mouseBehavior.holding);
-        mouseBehavior.isTarget = true;
+        createPieces.swapPieces(position, createPieces.mouseHolding);
+        createPieces.mouseIsPlaced = true;
     }
 
     void voidSpace()
@@ -102,20 +101,20 @@ public class movePieces : MonoBehaviour
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
         this.GetComponent<BoxCollider2D>().enabled = true;
         isFollowMouse = false;
-        mouseBehavior.isHolding = false;
-        mouseBehavior.isTarget = false;
+        createPieces.mouseIsHolding = false;
+        createPieces.mouseIsPlaced = false;
 
     }
 
     void cancelMove()
     {
-        int holdingSprite = createPieces.getCoordinateSprite(mouseBehavior.holding);
+        int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;
         this.GetComponent<BoxCollider2D>().enabled = true;
         isFollowMouse = false;
-        mouseBehavior.isHolding = false;
-        mouseBehavior.isTarget = false;
+        createPieces.mouseIsHolding = false;
+        createPieces.mouseIsPlaced = false;
     }
 }

@@ -9,6 +9,7 @@ public class createTile : MonoBehaviour
     public Color colorDark;
     public Color colorSelected;
     public int Scale;
+    int boardPosition;
     
 
     // Start is called before the first frame update
@@ -26,21 +27,26 @@ public class createTile : MonoBehaviour
     void createBoard()
     {
         bool isLightTile;
-        for (int row = 0; row < 8; row++)
+        boardPosition = 0;
+        for (int column = 0; column < 8; column++)   
         {
-            for (int column = 0; column < 8; column++)
+            for (int row = 7; row >= 0; row--)
             {
+                
                 isLightTile = (column + row) % 2 != 0;
                 var tileColor = (isLightTile) ? colorLight : colorDark;
 
                 Vector2 position = new Vector2(row * Scale, column * Scale);
                 drawTile(position,tileColor);
+                boardPosition++;
             }
         }
     }
-    void drawTile(Vector2 position, Color tileColor)
+    public void drawTile(Vector2 position, Color tileColor)
     {
         GameObject newTile = Instantiate(tilePrefab, position , Quaternion.Euler(0f, 0f, 0f));
+        //sets the position of the tiles (64)
+        newTile.GetComponent<colorTiles>().position = boardPosition;
         newTile.transform.parent = GameObject.Find("Square").transform;
         newTile.transform.localScale = new Vector3(Scale, Scale, 0);
         Renderer rend = newTile.GetComponent<Renderer>();

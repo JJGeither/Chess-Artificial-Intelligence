@@ -7,12 +7,15 @@ public class createPieces : MonoBehaviour
     public string FENString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     public GameObject piecePrefab;
     chessPieceClass[] chessCoordinates = new chessPieceClass[64];
-    private SpriteRenderer spriteR;
-    private Sprite sprites;
     public int Scale;
 
     private int black = 0;
     private int white = 1;
+
+    //values for when holding a piece
+    public int mouseHolding = 0;    //the position of the piece
+    public bool mouseIsHolding = false; //is holding a piece
+    public bool mouseIsPlaced = false;  //is the piece being placed
 
     [Header("Chess Sprites")]
     public Sprite[] pieceSheet = new Sprite[13];
@@ -33,11 +36,11 @@ public class createPieces : MonoBehaviour
             {
                 //multiply by the scale of tile, in this case 4
                 Vector2 position = new Vector2(row * Scale * 4, column * Scale * 4);
-                GameObject newTile = Instantiate(piecePrefab, position, Quaternion.Euler(0f, 0f, 0f));
-                newTile.transform.localScale = new Vector3(Scale, Scale, 0);
-                newTile.transform.parent = GameObject.Find("ChessPiece").transform;
-                newTile.GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[tileArrayPos].getSprite()];
-                newTile.GetComponent<movePieces>().position = tileArrayPos;
+                GameObject newPiece = Instantiate(piecePrefab, position, Quaternion.Euler(0f, 0f, 0f));
+                newPiece.transform.localScale = new Vector3(Scale, Scale, 0);
+                newPiece.transform.parent = GameObject.Find("ChessPiece").transform;
+                newPiece.GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[tileArrayPos].getSprite()];
+                newPiece.GetComponent<movePieces>().position = tileArrayPos;
 
                 tileArrayPos--;
             }

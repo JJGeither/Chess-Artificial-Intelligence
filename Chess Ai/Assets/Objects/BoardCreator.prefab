@@ -46,4 +46,5 @@ MonoBehaviour:
   tilePrefab: {fileID: 6269646055644285269, guid: f4afd7d07886a3f4ca63f87f317995a0, type: 3}
   colorLight: {r: 0.64997363, g: 0.7924528, b: 0.2878248, a: 1}
   colorDark: {r: 0.2730268, g: 0.49056602, b: 0.23834105, a: 1}
+  colorSelected: {r: 0.13412248, g: 0.20754719, b: 0.13412248, a: 1}
   Scale: 4
