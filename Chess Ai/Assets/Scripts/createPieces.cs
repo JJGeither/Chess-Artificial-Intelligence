@@ -17,15 +17,14 @@ public class createPieces : MonoBehaviour
     [Header("Chess Sprites")]
     public Sprite[] pieceSheet = new Sprite[13];
 
-
     // Start is called before the first frame update
     void Start()
     {
         setUpPieces(FENString);
-        drawPieces(chessCoordinates);
+        drawPieces();
     }
 
-    void drawPieces(chessPieceClass[] chessCoordinates)
+    public void drawPieces()
     {
         int tileArrayPos = 63;
         for (int column = 7; column >= 0; column--)
@@ -38,6 +37,8 @@ public class createPieces : MonoBehaviour
                 newTile.transform.localScale = new Vector3(Scale, Scale, 0);
                 newTile.transform.parent = GameObject.Find("ChessPiece").transform;
                 newTile.GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[tileArrayPos].getSprite()];
+                newTile.GetComponent<movePieces>().position = tileArrayPos;
+
                 tileArrayPos--;
             }
         }
@@ -107,6 +108,25 @@ public class createPieces : MonoBehaviour
         }
     }
 
+    //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
+    public void swapPieces(int pieceReplace, int pieceEmpty)
+    {
+        chessPieceClass temp = chessCoordinates[pieceEmpty];
+        chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
+        chessCoordinates[pieceReplace] = temp;
+    }
+
+    //allows to get value of sprite without having direct class
+    public int getCoordinateSprite(int coord)
+    {
+        return chessCoordinates[coord].getSprite();
+    }
+
+    //allows to determine if empty without having direct class
+    public bool getCoordinateEmpty(int coord)
+    {
+        return chessCoordinates[coord].isEmpty();
+    }
     class chessPieceClass
     {
         public int black = 0;
@@ -138,7 +158,7 @@ public class createPieces : MonoBehaviour
 
         public void setEmpty(bool state)
         {
-            isEmpty = state;
+            empty = state;
         }
 
         public virtual void setSprite(int piece, int color)
@@ -157,8 +177,13 @@ public class createPieces : MonoBehaviour
             return pieceColor;
         }
 
+        public bool isEmpty()
+        {
+            return empty;
+        }
+
         int pieceSprite;
-        bool isEmpty = false;
+        bool empty = false;
         int pieceColor;
         int position;
         int pieceType;

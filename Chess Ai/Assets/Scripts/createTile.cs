@@ -7,6 +7,7 @@ public class createTile : MonoBehaviour
     public GameObject tilePrefab;
     public Color colorLight;
     public Color colorDark;
+    public Color colorSelected;
     public int Scale;
     
 
@@ -31,7 +32,7 @@ public class createTile : MonoBehaviour
             {
                 isLightTile = (column + row) % 2 != 0;
                 var tileColor = (isLightTile) ? colorLight : colorDark;
-                
+
                 Vector2 position = new Vector2(row * Scale, column * Scale);
                 drawTile(position,tileColor);
             }
