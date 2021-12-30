@@ -57,12 +57,13 @@ public class movePieces : MonoBehaviour
         //replaces the pieces only when the mouse is holding unto something
         if (createPieces.mouseIsHolding)
         {
-            if (createPieces.mouseHolding == position)
+            if (createPieces.mouseHolding == position)  //cancels if click on original tile
             {
                 cancelMove();
                 return;
-            } else if (createPieces.chessCoordinates[position].isValidMovement)
+            } else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
                 replacePiece();
+                reducePawnRange();
             return;
         }
     }
@@ -110,6 +111,14 @@ public class movePieces : MonoBehaviour
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
         Destroy(newPiece.gameObject);
         endMovement();
+    }
+
+    void reducePawnRange()
+    {
+        if (createPieces.chessCoordinates[position].getType() == 1)
+        {
+            createPieces.chessCoordinates[position].setRange(1);
+        }
     }
 
     void endMovement()

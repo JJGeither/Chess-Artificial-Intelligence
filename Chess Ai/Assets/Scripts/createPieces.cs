@@ -10,7 +10,16 @@ public class createPieces : MonoBehaviour
     public chessPieceClass[] chessCoordinates = new chessPieceClass[64];
     public int Scale;
 
-    public static readonly int[] incrementAmnts = { 8, -8, 1, -1, 9, -9, 7, -7 };
+    public static readonly int[] incrementAmnts = {
+    8,
+    -8,
+    1,
+    -1,
+    9,
+    -9,
+    7,
+    -7
+  };
     public static readonly int[][] numSquareToEdge = new int[64][];
 
     static void numToEdge()
@@ -27,15 +36,15 @@ public class createPieces : MonoBehaviour
                 int squareIndex = column * 8 + (7 - row);
 
                 numSquareToEdge[squareIndex] = new int[] {
-                    edgeUp,
-                    edgeDown,
-                    edgeLeft,
-                    edgeRight,
-                    min(edgeUp, edgeLeft),
-                    min(edgeDown, edgeRight),
-                    min(edgeUp, edgeRight),
-                    min(edgeDown, edgeLeft)
-                };
+          edgeUp,
+          edgeDown,
+          edgeLeft,
+          edgeRight,
+          min(edgeUp, edgeLeft),
+          min(edgeDown, edgeRight),
+          min(edgeUp, edgeRight),
+          min(edgeDown, edgeLeft)
+        };
             }
         }
     }
@@ -177,40 +186,45 @@ public class createPieces : MonoBehaviour
         //gets array of movement directions and copies to new array
         int[] directionsAllowed = new int[chessCoordinates[pos].getDirections().Length];
         chessCoordinates[pos].getDirections().CopyTo(directionsAllowed, 0);
-        int pieceColor = chessCoordinates[pos].getColor();  //gets the piece color
-        int numDirections = directionsAllowed.Length;   //the amount of directions it can move in (bishop can move in four directions)
+        int pieceColor = chessCoordinates[pos].getColor(); //gets the piece color
+        int numDirections = directionsAllowed.Length; //the amount of directions it can move in (bishop can move in four directions)
 
-        pawnDiagonal(pos);  //checks the diagonal movement of pawns
-        
+        pawnDiagonal(pos); //checks the diagonal movement of pawns
 
-        for (int direction = 0; direction < numDirections; direction++)     //checks each eight directions
+        if (chessCoordinates[pos].getType() != 2) //will have special movement if it is a knight piece
         {
-            int checkPos = pos;
-            int length = min(numSquareToEdge[pos][directionsAllowed[direction]], chessCoordinates[pos].getRange());
-            for (int numToEdge = 0; numToEdge < length; numToEdge++)   //checks each square advancing towards edge
+            for (int direction = 0; direction < numDirections; direction++) //checks each eight directions
             {
-                checkPos += incrementAmnts[directionsAllowed[direction]];
-                if (chessCoordinates[checkPos].isEmpty())
+                int checkPos = pos;
+                int length = min(numSquareToEdge[pos][directionsAllowed[direction]], chessCoordinates[pos].getRange());
+
+                for (int numToEdge = 0; numToEdge < length; numToEdge++) //checks each square advancing towards edge
                 {
-                    //makes tile valid
-                    chessCoordinates[checkPos].isValidMovement = true;
-                }
-                else if (chessCoordinates[checkPos].getColor() == pieceColor || chessCoordinates[pos].getType() == 1)   //will stop prematurly if encounters piece of same color or if its a pawn piece
-                {
-                    //makes tile invalid and stops while method if meets same color piece
-                    chessCoordinates[checkPos].isValidMovement = false;
-                    break;
-                }
-                else
-                {
-                    //makes tile valid and stops while method if meets a different color piece
-                    chessCoordinates[checkPos].isValidMovement = true;
-                    break;
+                    checkPos += incrementAmnts[directionsAllowed[direction]];
+                    if (chessCoordinates[checkPos].isEmpty())
+                    {
+                        //makes tile valid
+                        chessCoordinates[checkPos].isValidMovement = true;
+                    }
+                    else if (chessCoordinates[checkPos].getColor() == pieceColor || chessCoordinates[pos].getType() == 1) //will stop prematurly if encounters piece of same color or if its a pawn piece
+                    {
+                        //makes tile invalid and stops while method if meets same color piece
+                        chessCoordinates[checkPos].isValidMovement = false;
+                        break;
+                    }
+                    else
+                    {
+                        //makes tile valid and stops while method if meets a different color piece
+                        chessCoordinates[checkPos].isValidMovement = true;
+                        break;
+                    }
                 }
             }
         }
-
-       
+        else
+        {
+            knightMovement(pos);
+        }
     }
 
     public void pawnDiagonal(int pos)
@@ -233,6 +247,55 @@ public class createPieces : MonoBehaviour
             if (chessCoordinates[pos + upRight].getColor() != piece.getColor() && chessCoordinates[pos + upRight].getColor() >= 0)
             {
                 chessCoordinates[pos + upRight].isValidMovement = true;
+            }
+        }
+    }
+
+    public void knightMovement(int pos)
+    {
+        int[] knightIncrements = {
+      17,
+      15,
+      10,
+      6,
+      -6,
+      -10,
+      -15,
+      -17
+    }; //the spaces from position that knight can move to
+        int[] knightRowDiff = {
+      2,
+      2,
+      1,
+      1,
+      -1,
+      -1,
+      -2,
+      -2
+    }; //makes sure that the valid moves done overlap into other layers
+        int incrementLength = knightIncrements.Length;
+
+        for (int i = 0; i < incrementLength; i++)
+        {
+            int checkPos = pos + knightIncrements[i];
+            if (checkPos <= 63 && checkPos >= 0 && (checkPos / 8) - (pos / 8) == knightRowDiff[i])
+            {
+                if (chessCoordinates[checkPos].isEmpty())
+                {
+                    //makes tile valid
+                    chessCoordinates[checkPos].isValidMovement = true;
+                }
+                else if (chessCoordinates[pos].getColor() == chessCoordinates[checkPos].getColor()) //will stop prematurly if encounters piece of same color or if its a pawn piece
+                {
+                    //makes tile invalid and stops while method if meets same color piece
+                    chessCoordinates[checkPos].isValidMovement = false;
+                }
+                else
+                {
+                    //makes tile valid and stops while method if meets a different color piece
+                    chessCoordinates[checkPos].isValidMovement = true;
+
+                }
             }
         }
     }
@@ -301,7 +364,7 @@ public class createPieces : MonoBehaviour
         {
             return initialPos;
         }
-    
+
         public void setRange(int newRange)
         {
             range = newRange;
@@ -336,7 +399,7 @@ public class createPieces : MonoBehaviour
         public void setDirection(int[] directions)
         {
             directionsAllowed = new int[directions.Length];
-            directions.CopyTo(directionsAllowed,0);
+            directions.CopyTo(directionsAllowed, 0);
         }
 
         public void setType(int piece)
@@ -358,7 +421,7 @@ public class createPieces : MonoBehaviour
         int initialPos;
 
     }
-    
+
     class Empty : chessPieceClass
     {
         public Empty(int tilePosition)
@@ -386,7 +449,9 @@ public class createPieces : MonoBehaviour
             {
                 relativeDir = down;
             }
-            int[] directions = {    relativeDir     };
+            int[] directions = {
+        relativeDir
+      };
             setDirection(directions);
             setRange(2);
             setInitialPos(tilePosition);
@@ -403,7 +468,11 @@ public class createPieces : MonoBehaviour
             setPosition(tilePosition);
             setSprite(knight, newPieceColor);
             setInitialPos(tilePosition);
-
+            int[] directions = {
+        0
+      };
+            setRange(1);
+            setDirection(directions);
         }
     }
 
@@ -417,11 +486,11 @@ public class createPieces : MonoBehaviour
             setPosition(tilePosition);
             setSprite(bishop, newPieceColor);
             int[] directions = {
-                upLeft,
-                downRight,
-                upRight,
-                downLeft
-            };
+        upLeft,
+        downRight,
+        upRight,
+        downLeft
+      };
             setDirection(directions);
             setInitialPos(tilePosition);
         }
@@ -437,11 +506,11 @@ public class createPieces : MonoBehaviour
             setPosition(tilePosition);
             setSprite(rook, newPieceColor);
             int[] directions = {
-                up,
-                down,
-                left,
-                right
-            };
+        up,
+        down,
+        left,
+        right
+      };
             setDirection(directions);
             setInitialPos(tilePosition);
 
@@ -458,15 +527,15 @@ public class createPieces : MonoBehaviour
             setPosition(tilePosition);
             setSprite(king, newPieceColor);
             int[] directions = {
-                upLeft,
-                downRight,
-                upRight,
-                downLeft,
-                up,
-                down,
-                left,
-                right
-            };
+        upLeft,
+        downRight,
+        upRight,
+        downLeft,
+        up,
+        down,
+        left,
+        right
+      };
             setDirection(directions);
             setInitialPos(tilePosition);
             setRange(1);
@@ -484,15 +553,15 @@ public class createPieces : MonoBehaviour
             setPosition(tilePosition);
             setSprite(queen, newPieceColor);
             int[] directions = {
-                upLeft,
-                downRight,
-                upRight,
-                downLeft,
-                up,
-                down,
-                left,
-                right
-            };
+        upLeft,
+        downRight,
+        upRight,
+        downLeft,
+        up,
+        down,
+        left,
+        right
+      };
             setDirection(directions);
             setInitialPos(tilePosition);
         }
