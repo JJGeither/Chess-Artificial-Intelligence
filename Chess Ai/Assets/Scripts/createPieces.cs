@@ -86,7 +86,6 @@ public class createPieces : MonoBehaviour
                 tileArrayPos--;
             }
         }
-
     }
 
     void setUpPieces(string FENString)
@@ -236,43 +235,23 @@ public class createPieces : MonoBehaviour
             //checks up if white, down if black
             int upLeft = incrementAmnts[5 - chessCoordinates[pos].getColor()];
             int upRight = incrementAmnts[7 - chessCoordinates[pos].getColor()];
+            int[] diagonalMovement = { pos + upLeft, pos + upRight };
 
-            //checks the left
-            if (chessCoordinates[pos + upLeft].getColor() != piece.getColor() && chessCoordinates[pos + upLeft].getColor() >= 0)
+            for (int dir = 0; dir < 2; dir++)
             {
-                chessCoordinates[pos + upLeft].isValidMovement = true;
-            }
-
-            //checks the right
-            if (chessCoordinates[pos + upRight].getColor() != piece.getColor() && chessCoordinates[pos + upRight].getColor() >= 0)
-            {
-                chessCoordinates[pos + upRight].isValidMovement = true;
+                //checks the left
+                if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && (diagonalMovement[dir] / 8) - (pos / 8) == 1)
+                {
+                    chessCoordinates[diagonalMovement[dir]].isValidMovement = true;
+                }
             }
         }
     }
 
     public void knightMovement(int pos)
     {
-        int[] knightIncrements = {
-      17,
-      15,
-      10,
-      6,
-      -6,
-      -10,
-      -15,
-      -17
-    }; //the spaces from position that knight can move to
-        int[] knightRowDiff = {
-      2,
-      2,
-      1,
-      1,
-      -1,
-      -1,
-      -2,
-      -2
-    }; //makes sure that the valid moves done overlap into other layers
+        int[] knightIncrements = { 17, 15, 10, 6, -6, -10, -15, -17 }; //the spaces from position that knight can move to
+        int[] knightRowDiff = { 2, 2, 1, 1, -1, -1, -2, -2 }; //makes sure that the valid moves done overlap into other layers
         int incrementLength = knightIncrements.Length;
 
         for (int i = 0; i < incrementLength; i++)
