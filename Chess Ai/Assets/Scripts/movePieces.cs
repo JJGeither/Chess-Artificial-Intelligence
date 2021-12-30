@@ -35,6 +35,8 @@ public class movePieces : MonoBehaviour
         //if the mouse is not holding anything and not selecting an empty space
         if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
         {
+            //sets validity
+            createPieces.checkValidity(position);
 
             //sets the original position to reference later
             originalPos = this.transform.position;
@@ -59,8 +61,8 @@ public class movePieces : MonoBehaviour
             {
                 cancelMove();
                 return;
-            }
-            replacePiece();
+            } else if (createPieces.chessCoordinates[position].isValidMovement)
+                replacePiece();
             return;
         }
     }
@@ -99,11 +101,7 @@ public class movePieces : MonoBehaviour
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
-        this.GetComponent<BoxCollider2D>().enabled = true;
-        isFollowMouse = false;
-        createPieces.mouseIsHolding = false;
-        createPieces.mouseIsPlaced = false;
-
+        endMovement();
     }
 
     void cancelMove()
@@ -111,10 +109,25 @@ public class movePieces : MonoBehaviour
         int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
         Destroy(newPiece.gameObject);
+        endMovement();
+    }
+
+    void endMovement()
+    {
+        //turns all the valid tiles into invalid ones
+        for (int i = 0; i < 63; i++)
+        {
+            createPieces.chessCoordinates[i].isValidMovement = false;
+        }
+
+        //transforms the piece back
         this.transform.position = originalPos;
         this.GetComponent<BoxCollider2D>().enabled = true;
         isFollowMouse = false;
         createPieces.mouseIsHolding = false;
         createPieces.mouseIsPlaced = false;
+
     }
+
+
 }

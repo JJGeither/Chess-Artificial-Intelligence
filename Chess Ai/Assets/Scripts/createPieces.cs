@@ -1,21 +1,52 @@
 using System.Collections;
 using System.Collections.Generic;
+using static Unity.Mathematics.math;
 using UnityEngine;
 
 public class createPieces : MonoBehaviour
 {
     public string FENString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     public GameObject piecePrefab;
-    chessPieceClass[] chessCoordinates = new chessPieceClass[64];
+    public chessPieceClass[] chessCoordinates = new chessPieceClass[64];
     public int Scale;
+
+    public static readonly int[] incrementAmnts = { 8, -8, 1, -1, 9, -9, 7, -7 };
+    public static readonly int[][] numSquareToEdge = new int[64][];
+
+    static void numToEdge()
+    {
+        for (int column = 0; column < 8; column++)
+        {
+            for (int row = 7; row >= 0; row--)
+            {
+                int edgeUp = 7 - column;
+                int edgeDown = column;
+                int edgeRight = 7 - row;
+                int edgeLeft = row;
+
+                int squareIndex = column * 8 + (7 - row);
+
+                numSquareToEdge[squareIndex] = new int[] {
+                    edgeUp,
+                    edgeDown,
+                    edgeLeft,
+                    edgeRight,
+                    min(edgeUp, edgeLeft),
+                    min(edgeDown, edgeRight),
+                    min(edgeUp, edgeRight),
+                    min(edgeDown, edgeLeft)
+                };
+            }
+        }
+    }
 
     private int black = 0;
     private int white = 1;
 
     //values for when holding a piece
-    public int mouseHolding = 0;    //the position of the piece
+    public int mouseHolding = 0; //the position of the piece
     public bool mouseIsHolding = false; //is holding a piece
-    public bool mouseIsPlaced = false;  //is the piece being placed
+    public bool mouseIsPlaced = false; //is the piece being placed
 
     [Header("Chess Sprites")]
     public Sprite[] pieceSheet = new Sprite[13];
@@ -24,6 +55,7 @@ public class createPieces : MonoBehaviour
     void Start()
     {
         setUpPieces(FENString);
+        numToEdge();
         drawPieces();
     }
 
@@ -45,7 +77,7 @@ public class createPieces : MonoBehaviour
                 tileArrayPos--;
             }
         }
-        
+
     }
 
     void setUpPieces(string FENString)
@@ -130,10 +162,87 @@ public class createPieces : MonoBehaviour
     {
         return chessCoordinates[coord].isEmpty();
     }
-    class chessPieceClass
+
+    public void checkValidity(int pos)
     {
+        //0 = up
+        //1 = down
+        //2 = left
+        //3 = right
+        //4 = up/left
+        //5 = down/right
+        //6 = up/right
+        //7 = down/left
+
+        //gets array of movement directions and copies to new array
+        int[] directionsAllowed = new int[chessCoordinates[pos].getDirections().Length];
+        chessCoordinates[pos].getDirections().CopyTo(directionsAllowed, 0);
+        int pieceColor = chessCoordinates[pos].getColor();  //gets the piece color
+        int numDirections = directionsAllowed.Length;   //the amount of directions it can move in (bishop can move in four directions)
+
+        pawnDiagonal(pos);  //checks the diagonal movement of pawns
+        
+
+        for (int direction = 0; direction < numDirections; direction++)     //checks each eight directions
+        {
+            int checkPos = pos;
+            int length = min(numSquareToEdge[pos][directionsAllowed[direction]], chessCoordinates[pos].getRange());
+            for (int numToEdge = 0; numToEdge < length; numToEdge++)   //checks each square advancing towards edge
+            {
+                checkPos += incrementAmnts[directionsAllowed[direction]];
+                if (chessCoordinates[checkPos].isEmpty())
+                {
+                    //makes tile valid
+                    chessCoordinates[checkPos].isValidMovement = true;
+                }
+                else if (chessCoordinates[checkPos].getColor() == pieceColor || chessCoordinates[pos].getType() == 1)   //will stop prematurly if encounters piece of same color or if its a pawn piece
+                {
+                    //makes tile invalid and stops while method if meets same color piece
+                    chessCoordinates[checkPos].isValidMovement = false;
+                    break;
+                }
+                else
+                {
+                    //makes tile valid and stops while method if meets a different color piece
+                    chessCoordinates[checkPos].isValidMovement = true;
+                    break;
+                }
+            }
+        }
+
+       
+    }
+
+    public void pawnDiagonal(int pos)
+    {
+        chessPieceClass piece = chessCoordinates[pos];
+        //consideres movement for pawns and castling
+        if (piece.getType() == 1)
+        {
+            //checks up if white, down if black
+            int upLeft = incrementAmnts[5 - chessCoordinates[pos].getColor()];
+            int upRight = incrementAmnts[7 - chessCoordinates[pos].getColor()];
+
+            //checks the left
+            if (chessCoordinates[pos + upLeft].getColor() != piece.getColor() && chessCoordinates[pos + upLeft].getColor() >= 0)
+            {
+                chessCoordinates[pos + upLeft].isValidMovement = true;
+            }
+
+            //checks the right
+            if (chessCoordinates[pos + upRight].getColor() != piece.getColor() && chessCoordinates[pos + upRight].getColor() >= 0)
+            {
+                chessCoordinates[pos + upRight].isValidMovement = true;
+            }
+        }
+    }
+
+    public class chessPieceClass
+    {
+
         public int black = 0;
         public int white = 1;
+        public int emptyColor = -1;
 
         public int pawn = 1;
         public int knight = 2;
@@ -141,6 +250,20 @@ public class createPieces : MonoBehaviour
         public int rook = 4;
         public int king = 5;
         public int queen = 6;
+
+        public int up = 0;
+        public int down = 1;
+        public int left = 2;
+        public int right = 3;
+        public int upLeft = 4;
+        public int downRight = 5;
+        public int upRight = 6;
+        public int downLeft = 7;
+
+        public bool isValidMovement = false;
+
+        //used for pawn and king in order to limit their range
+        public int range = int.MaxValue;
 
         //deconstructor
         ~chessPieceClass()
@@ -169,6 +292,26 @@ public class createPieces : MonoBehaviour
             pieceSprite = piece + (color * 6);
         }
 
+        public void setInitialPos(int pos)
+        {
+            initialPos = pos;
+        }
+
+        public int getInitialPos()
+        {
+            return initialPos;
+        }
+    
+        public void setRange(int newRange)
+        {
+            range = newRange;
+        }
+
+        public int getRange()
+        {
+            return range;
+        }
+
         //getters
         public virtual int getSprite()
         {
@@ -185,14 +328,37 @@ public class createPieces : MonoBehaviour
             return empty;
         }
 
+        public int[] getDirections()
+        {
+            return directionsAllowed;
+        }
+
+        public void setDirection(int[] directions)
+        {
+            directionsAllowed = new int[directions.Length];
+            directions.CopyTo(directionsAllowed,0);
+        }
+
+        public void setType(int piece)
+        {
+            pieceType = piece;
+        }
+
+        public int getType()
+        {
+            return pieceType;
+        }
+
         int pieceSprite;
         bool empty = false;
         int pieceColor;
         int position;
         int pieceType;
+        int[] directionsAllowed;
+        int initialPos;
 
     }
-
+    
     class Empty : chessPieceClass
     {
         public Empty(int tilePosition)
@@ -200,7 +366,8 @@ public class createPieces : MonoBehaviour
             setEmpty(true);
             setPosition(tilePosition);
             //sets it to empty sprite
-            setSprite(0,0);
+            setSprite(0, 0);
+            setColor(emptyColor);
         }
     }
 
@@ -209,12 +376,21 @@ public class createPieces : MonoBehaviour
         //constructor
         public Pawn(int tilePosition, int newPieceColor)
         {
+            setType(pawn);
             setColor(newPieceColor);
             setPosition(tilePosition);
-            setSprite(pawn,newPieceColor);
+            setSprite(pawn, newPieceColor);
+            //changes direction based on side of board (black == down, white == up)
+            int relativeDir = up;
+            if (newPieceColor == 0)
+            {
+                relativeDir = down;
+            }
+            int[] directions = {    relativeDir     };
+            setDirection(directions);
+            setRange(2);
+            setInitialPos(tilePosition);
         }
-        
-        
     }
 
     class Knight : chessPieceClass
@@ -222,9 +398,12 @@ public class createPieces : MonoBehaviour
         //constructor
         public Knight(int tilePosition, int newPieceColor)
         {
+            setType(knight);
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(knight, newPieceColor);
+            setInitialPos(tilePosition);
+
         }
     }
 
@@ -233,9 +412,18 @@ public class createPieces : MonoBehaviour
         //constructor
         public Bishop(int tilePosition, int newPieceColor)
         {
+            setType(bishop);
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(bishop, newPieceColor);
+            int[] directions = {
+                upLeft,
+                downRight,
+                upRight,
+                downLeft
+            };
+            setDirection(directions);
+            setInitialPos(tilePosition);
         }
     }
 
@@ -244,9 +432,19 @@ public class createPieces : MonoBehaviour
         //constructor
         public Rook(int tilePosition, int newPieceColor)
         {
+            setType(rook);
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(rook, newPieceColor);
+            int[] directions = {
+                up,
+                down,
+                left,
+                right
+            };
+            setDirection(directions);
+            setInitialPos(tilePosition);
+
         }
     }
 
@@ -255,10 +453,25 @@ public class createPieces : MonoBehaviour
         //constructor
         public King(int tilePosition, int newPieceColor)
         {
+            setType(king);
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(king, newPieceColor);
+            int[] directions = {
+                upLeft,
+                downRight,
+                upRight,
+                downLeft,
+                up,
+                down,
+                left,
+                right
+            };
+            setDirection(directions);
+            setInitialPos(tilePosition);
+            setRange(1);
         }
+
     }
 
     class Queen : chessPieceClass
@@ -266,10 +479,22 @@ public class createPieces : MonoBehaviour
         //constructor
         public Queen(int tilePosition, int newPieceColor)
         {
+            setType(queen);
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(queen, newPieceColor);
+            int[] directions = {
+                upLeft,
+                downRight,
+                upRight,
+                downLeft,
+                up,
+                down,
+                left,
+                right
+            };
+            setDirection(directions);
+            setInitialPos(tilePosition);
         }
     }
 }
-

@@ -32,13 +32,22 @@ public class colorTiles : MonoBehaviour
 
     void updateSelectColor()
     {
+
+        //color for moving piece
         if (createPieces.mouseHolding == position && createPieces.mouseIsHolding)
         {
             this.GetComponent<SpriteRenderer>().color = colorSelected;
+            return;
         }
-        else
+
+        //color for valid piece
+        if (createPieces.chessCoordinates[position].isValidMovement && createPieces.mouseIsHolding)
         {
-            this.GetComponent<SpriteRenderer>().color = originalColor;
+            this.GetComponent<SpriteRenderer>().color = colorValid;
+            return;
         }
+
+        this.GetComponent<SpriteRenderer>().color = originalColor;
+        
     }
 }

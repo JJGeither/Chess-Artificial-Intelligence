@@ -95,6 +95,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 992ec0259f1050840a2fc9f478b5b637, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorSelected: {r: 0.10527614, g: 0.21698111, b: 0.086997144, a: 1}
-  colorValid: {r: 0.6981132, g: 0.049394794, b: 0.12846805, a: 1}
+  colorSelected: {r: 0.6637148, g: 0.8962264, b: 0.6665162, a: 1}
+  colorValid: {r: 0.8962264, g: 0.34242615, b: 0.40955338, a: 1}
   position: 0

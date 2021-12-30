@@ -32,13 +32,12 @@ public class createTile : MonoBehaviour
         {
             for (int row = 7; row >= 0; row--)
             {
-                
                 isLightTile = (column + row) % 2 != 0;
                 var tileColor = (isLightTile) ? colorLight : colorDark;
 
                 Vector2 position = new Vector2(row * Scale, column * Scale);
                 drawTile(position,tileColor);
-                boardPosition++;
+                boardPosition++;        //used to convert to a 1D position instead of a 2D position
             }
         }
     }
