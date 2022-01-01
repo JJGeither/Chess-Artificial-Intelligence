@@ -8,6 +8,7 @@ public class createPieces : MonoBehaviour
     public string FENString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     public GameObject piecePrefab;
     public chessPieceClass[] chessCoordinates = new chessPieceClass[64];
+    public GameObject[] pieceObjects = new GameObject[64];  //used for directly referencing object
     public int Scale;
 
     public static readonly int[] incrementAmnts = {
@@ -82,7 +83,7 @@ public class createPieces : MonoBehaviour
                 newPiece.transform.parent = GameObject.Find("ChessPiece").transform;
                 newPiece.GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[tileArrayPos].getSprite()];
                 newPiece.GetComponent<movePieces>().position = tileArrayPos;
-
+                pieceObjects[tileArrayPos] = newPiece;
                 tileArrayPos--;
             }
         }
@@ -239,13 +240,37 @@ public class createPieces : MonoBehaviour
 
             for (int dir = 0; dir < 2; dir++)
             {
-                //checks the left
-                if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && (diagonalMovement[dir] / 8) - (pos / 8) == 1)
+                //checks the left and right
+                if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && levelDifference(diagonalMovement[dir], pos) == 1)
                 {
                     chessCoordinates[diagonalMovement[dir]].isValidMovement = true;
                 }
             }
+
+            //en passant
+            //1, 0
+            int[] adjMovement = {  pos + 1 , pos - 1 };
+            if (chessCoordinates[pos].getColor() == 0)  //swaps adj movement depending on color
+            {
+                (adjMovement[0], adjMovement[1]) = (adjMovement[1], adjMovement[0]);
+            }
+
+            for (int i = 0; i < 2; i++)
+            {
+                if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && levelDifference(adjMovement[i], pos) == 0)
+                {
+                    chessCoordinates[diagonalMovement[i]].isValidMovement = true;
+                    chessCoordinates[diagonalMovement[i]].setEnPassantPos(adjMovement[i]);
+                }
+                
+            }
+            
         }
+    }
+
+    public int levelDifference(int pos1, int pos2)
+    {
+        return abs((pos1 / 8) - (pos2 / 8));
     }
 
     public void knightMovement(int pos)
@@ -304,6 +329,9 @@ public class createPieces : MonoBehaviour
 
         public bool isValidMovement = false;
 
+        //used for en passant
+        bool moveTwoLastTurn = false;
+
         //used for pawn and king in order to limit their range
         public int range = int.MaxValue;
 
@@ -337,6 +365,16 @@ public class createPieces : MonoBehaviour
         public void setInitialPos(int pos)
         {
             initialPos = pos;
+        }
+
+        public void setMoveTwoLastTurn(bool state)
+        {
+            moveTwoLastTurn = state;
+        }
+
+        public bool getMoveTwoLastTurn()
+        {
+            return moveTwoLastTurn;
         }
 
         public int getInitialPos()
@@ -391,6 +429,28 @@ public class createPieces : MonoBehaviour
             return pieceType;
         }
 
+
+        public void setEnPassantPos(int pos)
+        {
+            enPassantPos = pos;
+            enPassantValid = true;
+        }
+
+        public int getEnPassantPos()
+        {
+            return enPassantPos;
+        }
+
+        public bool isEnPassant()
+        {
+            return enPassantValid;
+        }
+
+        public void setEnPassant(bool state)
+        {
+            enPassantValid = state;
+        }
+
         int pieceSprite;
         bool empty = false;
         int pieceColor;
@@ -398,10 +458,12 @@ public class createPieces : MonoBehaviour
         int pieceType;
         int[] directionsAllowed;
         int initialPos;
+        int enPassantPos;
+        bool enPassantValid;
 
     }
 
-    class Empty : chessPieceClass
+    public class Empty : chessPieceClass
     {
         public Empty(int tilePosition)
         {
@@ -422,15 +484,17 @@ public class createPieces : MonoBehaviour
             setColor(newPieceColor);
             setPosition(tilePosition);
             setSprite(pawn, newPieceColor);
+            
             //changes direction based on side of board (black == down, white == up)
             int relativeDir = up;
             if (newPieceColor == 0)
             {
                 relativeDir = down;
             }
-            int[] directions = {
-        relativeDir
-      };
+            int[] directions = 
+            {
+                relativeDir
+            };
             setDirection(directions);
             setRange(2);
             setInitialPos(tilePosition);

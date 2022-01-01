@@ -61,12 +61,27 @@ public class movePieces : MonoBehaviour
             {
                 cancelMove();
                 return;
-            } else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
-                replacePiece();
+            }
+            else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
+            {
+                removeEnPassantPiece();
+                replacePiece(createPieces.mouseHolding);
                 reducePawnRange();
-            return;
+                return;
+            }
+                
         }
     }
+
+    void removeEnPassantPiece()
+    {
+        if (createPieces.chessCoordinates[position].isEnPassant())
+        {
+            emptyPiece(createPieces.chessCoordinates[position].getEnPassantPos());
+            createPieces.chessCoordinates[position].setEnPassant(false);
+        }
+    }
+
 
     void followMouse()
     {
@@ -85,39 +100,52 @@ public class movePieces : MonoBehaviour
 
         if (createPieces.mouseIsPlaced)
         {
-            voidSpace();
+            emptyPiece(position);
+            endMovement();
         }
     }
 
-    void replacePiece()
+    void replacePiece(int mouseHolding)
     {
-        int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
+        int holdingSprite = createPieces.getCoordinateSprite(mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
-        createPieces.swapPieces(position, createPieces.mouseHolding);
+        createPieces.swapPieces(position, mouseHolding);
         createPieces.mouseIsPlaced = true;
     }
 
-    void voidSpace()
+    void emptyPiece(int pos)
     {
-        Destroy(newPiece.gameObject);
-        this.transform.position = originalPos;
-        this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
-        endMovement();
+        Debug.Log(pos);
+        createPieces.chessCoordinates[pos] = new createPieces.Empty(pos);
+        GameObject obj = createPieces.pieceObjects[pos];
+        obj.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
+        
     }
 
     void cancelMove()
     {
         int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
-        Destroy(newPiece.gameObject);
         endMovement();
     }
 
     void reducePawnRange()
     {
+        endPassant();
         if (createPieces.chessCoordinates[position].getType() == 1)
         {
             createPieces.chessCoordinates[position].setRange(1);
+            createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
+        }
+    }
+
+    void endPassant()
+    {
+        //sets all en passant capability to false after turn ends
+        //makes sure that en passant can only be used right after pawn moves
+        for (int i = 0; i < 63; i++)
+        {
+            createPieces.chessCoordinates[i].setMoveTwoLastTurn(false);
         }
     }
 
@@ -129,8 +157,8 @@ public class movePieces : MonoBehaviour
             createPieces.chessCoordinates[i].isValidMovement = false;
         }
 
-        //transforms the piece back
-        this.transform.position = originalPos;
+        Destroy(newPiece.gameObject);
+        this.transform.position = originalPos;          //transforms the piece back
         this.GetComponent<BoxCollider2D>().enabled = true;
         isFollowMouse = false;
         createPieces.mouseIsHolding = false;
