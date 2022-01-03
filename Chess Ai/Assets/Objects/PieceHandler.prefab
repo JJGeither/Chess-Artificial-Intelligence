@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8993768994764595678}
   - component: {fileID: 5073858654027239956}
+  - component: {fileID: -1302365434260707119}
   m_Layer: 2
   m_Name: PieceHandler
   m_TagString: Untagged
@@ -45,7 +46,75 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FENString: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
   piecePrefab: {fileID: 321986270840257195, guid: 79fd1b14b00b4494ca8057b7ed3d42df, type: 3}
+  pieceObjects:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   Scale: 1
+  mouseHolding: 0
+  mouseIsHolding: 0
+  mouseIsPlaced: 0
   pieceSheet:
   - {fileID: 0}
   - {fileID: 21300000, guid: cc30a4f8ddb033e4d89d7ae00b1b39ac, type: 3}
@@ -60,3 +129,25 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 1d7096b3ed8d7f245acc8f54971c1b36, type: 3}
   - {fileID: 21300000, guid: 7a667df4c18b24e46987a2fe95d2e5bb, type: 3}
   - {fileID: 21300000, guid: cc261cef009c0984f83967a491611f44, type: 3}
+--- !u!114 &-1302365434260707119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4924502551152842503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca2d065311d13574aaafd555d30cb854, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UIPrefab: {fileID: 8464718867522166942, guid: ab1c34c736078ee4db6bcf9d3260d761, type: 3}
+  pieceSheet:
+  - {fileID: 21300000, guid: 5892114f7f817df4f9290ae53017caa9, type: 3}
+  - {fileID: 21300000, guid: 60dd05a2d2eeee84295c83231cf66e43, type: 3}
+  - {fileID: 21300000, guid: 70c87cc8f6d50f4409cfdcfa3a37d766, type: 3}
+  - {fileID: 21300000, guid: d4a01c701b78c86438cc06f68d627f81, type: 3}
+  - {fileID: 21300000, guid: 9a96da9ae21c2b544aa1cf420380c3e3, type: 3}
+  - {fileID: 21300000, guid: f40f4e2c456bc1446af61ea5eba772e5, type: 3}
+  - {fileID: 21300000, guid: 1d7096b3ed8d7f245acc8f54971c1b36, type: 3}
+  - {fileID: 21300000, guid: d4a01c701b78c86438cc06f68d627f81, type: 3}

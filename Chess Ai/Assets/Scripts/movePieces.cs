@@ -9,21 +9,29 @@ public class movePieces : MonoBehaviour
     Vector3 originalPos;
     bool isFollowMouse = false;
 
+    bool wait = false;
+    int prefabPieceType;
+
     private createPieces createPieces;
+    private userInterface userInterface;
 
     //follower object
     public GameObject piecePrefab;
     public GameObject newPiece;
+   
 
     // Start is called before the first frame update
     void Start()
     {
         createPieces = GameObject.Find("PieceHandler").GetComponent<createPieces>();
+        userInterface = GameObject.Find("PieceHandler").GetComponent<userInterface>();
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
+        waitForPromotionSelection();
+
         if (isFollowMouse)
         {
             followMouse();
@@ -67,9 +75,66 @@ public class movePieces : MonoBehaviour
                 removeEnPassantPiece();
                 replacePiece(createPieces.mouseHolding);
                 reducePawnRange();
+                if (createPieces.chessCoordinates[position].isPawnAtEnd())
+                {
+                    //knight = 2
+                    //bishop = 3
+                    //rook = 4
+                    //queen = 6
+                    createPieces.chessCoordinates[position].isValidMovement = false;
+                    userInterface.drawPawnPromotion();
+                    wait = true;    //used to wait to select promotion for pawn 
+                }
                 return;
             }
                 
+        }
+    }
+
+    void waitForPromotionSelection()
+    {
+        if (wait)
+        {
+            userInterface.GetComponent<userInterface>().pos = position;
+            int type = userInterface.GetComponent<userInterface>().type;
+            if (type != 0)
+            {
+                setPieceTo(type);
+            }
+        }
+    }
+
+    void setPieceTo(int pieceType)
+    {
+        int color = createPieces.chessCoordinates[position].getColor();
+        bool isChangePiece = false;
+        switch (pieceType)
+        {
+            case 2: //knight
+                createPieces.chessCoordinates[position] = new createPieces.Knight(position, color);
+                isChangePiece = true;
+                break;
+            case 3: //bishop
+                createPieces.chessCoordinates[position] = new createPieces.Bishop(position, color);
+                isChangePiece = true;
+                break;
+            case 4: //rook
+                createPieces.chessCoordinates[position] = new createPieces.Rook(position, color);
+                isChangePiece = true;
+                break;
+            case 6: //queen
+                createPieces.chessCoordinates[position] = new createPieces.Queen(position, color);
+                isChangePiece = true;
+                break;
+            default:
+                break;
+        }
+
+        if (isChangePiece)
+        {
+            this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[createPieces.chessCoordinates[position].getSprite()];
+            wait = false;
+            userInterface.GetComponent<userInterface>().type = 0;
         }
     }
 
@@ -115,7 +180,6 @@ public class movePieces : MonoBehaviour
 
     void emptyPiece(int pos)
     {
-        Debug.Log(pos);
         createPieces.chessCoordinates[pos] = new createPieces.Empty(pos);
         GameObject obj = createPieces.pieceObjects[pos];
         obj.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
@@ -143,7 +207,7 @@ public class movePieces : MonoBehaviour
     {
         //sets all en passant capability to false after turn ends
         //makes sure that en passant can only be used right after pawn moves
-        for (int i = 0; i < 63; i++)
+        for (int i = 0; i <= 63; i++)
         {
             createPieces.chessCoordinates[i].setMoveTwoLastTurn(false);
         }
@@ -152,7 +216,7 @@ public class movePieces : MonoBehaviour
     void endMovement()
     {
         //turns all the valid tiles into invalid ones
-        for (int i = 0; i < 63; i++)
+        for (int i = 0; i <= 63; i++)
         {
             createPieces.chessCoordinates[i].isValidMovement = false;
         }

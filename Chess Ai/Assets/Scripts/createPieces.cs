@@ -158,6 +158,7 @@ public class createPieces : MonoBehaviour
         chessPieceClass temp = chessCoordinates[pieceEmpty];
         chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
         chessCoordinates[pieceReplace] = temp;
+        chessCoordinates[pieceReplace].setPosition(pieceReplace);
     }
 
     //allows to get value of sprite without having direct class
@@ -189,7 +190,7 @@ public class createPieces : MonoBehaviour
         int pieceColor = chessCoordinates[pos].getColor(); //gets the piece color
         int numDirections = directionsAllowed.Length; //the amount of directions it can move in (bishop can move in four directions)
 
-        pawnDiagonal(pos); //checks the diagonal movement of pawns
+        pawnMovement(pos); //handles the special movement of pawns
 
         if (chessCoordinates[pos].getType() != 2) //will have special movement if it is a knight piece
         {
@@ -227,9 +228,12 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    public void pawnDiagonal(int pos)
+    public void pawnMovement(int pos)
     {
+
         chessPieceClass piece = chessCoordinates[pos];
+        
+        
         //consideres movement for pawns and castling
         if (piece.getType() == 1)
         {
@@ -241,14 +245,17 @@ public class createPieces : MonoBehaviour
             for (int dir = 0; dir < 2; dir++)
             {
                 //checks the left and right
-                if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && levelDifference(diagonalMovement[dir], pos) == 1)
+                if (0 <= diagonalMovement[dir] && diagonalMovement[dir] <= 63)
                 {
-                    chessCoordinates[diagonalMovement[dir]].isValidMovement = true;
+                    if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && rowDifference(diagonalMovement[dir], pos) == 1)
+                    {
+                        chessCoordinates[diagonalMovement[dir]].isValidMovement = true;
+                    }
                 }
+                    
             }
 
             //en passant
-            //1, 0
             int[] adjMovement = {  pos + 1 , pos - 1 };
             if (chessCoordinates[pos].getColor() == 0)  //swaps adj movement depending on color
             {
@@ -257,20 +264,28 @@ public class createPieces : MonoBehaviour
 
             for (int i = 0; i < 2; i++)
             {
-                if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && levelDifference(adjMovement[i], pos) == 0)
+                if (0 <= adjMovement[i] && adjMovement[i] <= 63)
                 {
-                    chessCoordinates[diagonalMovement[i]].isValidMovement = true;
-                    chessCoordinates[diagonalMovement[i]].setEnPassantPos(adjMovement[i]);
+                    if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && rowDifference(adjMovement[i], pos) == 0)
+                    {
+                        chessCoordinates[diagonalMovement[i]].isValidMovement = true;
+                        chessCoordinates[diagonalMovement[i]].setEnPassantPos(adjMovement[i]);
+                    }
                 }
-                
             }
+
             
         }
     }
 
-    public int levelDifference(int pos1, int pos2)
+    public int rowDifference(int pos1, int pos2)
     {
         return abs((pos1 / 8) - (pos2 / 8));
+    }
+
+    public int rowPosition(int pos)
+    {
+        return (pos / 8);
     }
 
     public void knightMovement(int pos)
@@ -451,6 +466,27 @@ public class createPieces : MonoBehaviour
             enPassantValid = state;
         }
 
+        public bool isPawnAtEnd()
+        {
+            if (getType() == 1)
+            {
+                int row = position / 8;
+                if (row == 7 && getColor() == white)
+                {
+                    Debug.Log("White Reached End");
+                    return true;
+                }
+                if (row == 0 && getColor() == black)
+                {
+                    Debug.Log("Black Reached End");
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        
+
         int pieceSprite;
         bool empty = false;
         int pieceColor;
@@ -475,7 +511,7 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    class Pawn : chessPieceClass
+    public class Pawn : chessPieceClass
     {
         //constructor
         public Pawn(int tilePosition, int newPieceColor)
@@ -501,7 +537,7 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    class Knight : chessPieceClass
+    public class Knight : chessPieceClass
     {
         //constructor
         public Knight(int tilePosition, int newPieceColor)
@@ -519,7 +555,7 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    class Bishop : chessPieceClass
+    public class Bishop : chessPieceClass
     {
         //constructor
         public Bishop(int tilePosition, int newPieceColor)
@@ -539,7 +575,7 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    class Rook : chessPieceClass
+    public class Rook : chessPieceClass
     {
         //constructor
         public Rook(int tilePosition, int newPieceColor)
@@ -560,7 +596,7 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    class King : chessPieceClass
+    public class King : chessPieceClass
     {
         //constructor
         public King(int tilePosition, int newPieceColor)
@@ -586,7 +622,7 @@ public class createPieces : MonoBehaviour
 
     }
 
-    class Queen : chessPieceClass
+    public class Queen : chessPieceClass
     {
         //constructor
         public Queen(int tilePosition, int newPieceColor)
