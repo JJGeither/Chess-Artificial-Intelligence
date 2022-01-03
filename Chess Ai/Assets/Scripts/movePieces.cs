@@ -10,7 +10,6 @@ public class movePieces : MonoBehaviour
     bool isFollowMouse = false;
 
     bool wait = false;
-    int prefabPieceType;
 
     private createPieces createPieces;
     private userInterface userInterface;
@@ -40,55 +39,61 @@ public class movePieces : MonoBehaviour
 
     private void OnMouseDown()
     {
-        //if the mouse is not holding anything and not selecting an empty space
-        if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
+        int playerTurn = createPieces.playerTurn;
+        int selectedTurn = createPieces.chessCoordinates[position].getColor();
+        if (selectedTurn == playerTurn)
         {
-            //sets validity
-            createPieces.checkValidity(position);
+            //if the mouse is not holding anything and not selecting an empty space
+            if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
+            {
+                //sets validity
+                createPieces.checkValidity(position);
 
-            //sets the original position to reference later
-            originalPos = this.transform.position;
+                //sets the original position to reference later
+                originalPos = this.transform.position;
 
-            //creates follower object
-            newPiece = Instantiate(piecePrefab, originalPos, Quaternion.Euler(0f, 0f, 0f));
+                //creates follower object
+                newPiece = Instantiate(piecePrefab, originalPos, Quaternion.Euler(0f, 0f, 0f));
 
-            //makes it so that this object will follow the mouse position until it is moved
-            isFollowMouse = true;
+                //makes it so that this object will follow the mouse position until it is moved
+                isFollowMouse = true;
 
-            //sets sprite to empty
-            this.GetComponent<SpriteRenderer>().sprite = null;
+                //sets sprite to empty
+                this.GetComponent<SpriteRenderer>().sprite = null;
 
-            return;
+                return;
 
+            }
         }
 
-        //replaces the pieces only when the mouse is holding unto something
-        if (createPieces.mouseIsHolding)
-        {
-            if (createPieces.mouseHolding == position)  //cancels if click on original tile
+            //replaces the pieces only when the mouse is holding unto something
+            if (createPieces.mouseIsHolding)
             {
-                cancelMove();
-                return;
-            }
-            else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
-            {
-                removeEnPassantPiece();
-                replacePiece(createPieces.mouseHolding);
-                reducePawnRange();
-                if (createPieces.chessCoordinates[position].isPawnAtEnd())
+                if (createPieces.mouseHolding == position)  //cancels if click on original tile
                 {
-                    //knight = 2
-                    //bishop = 3
-                    //rook = 4
-                    //queen = 6
-                    createPieces.chessCoordinates[position].isValidMovement = false;
-                    userInterface.drawPawnPromotion();
-                    wait = true;    //used to wait to select promotion for pawn 
+                    cancelMove();
+                    return;
                 }
-                return;
-            }
-                
-        }
+                else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
+                {
+                    removeEnPassantPiece();
+                    replacePiece(createPieces.mouseHolding);
+                    reducePawnRange();
+                    if (createPieces.chessCoordinates[position].isPawnAtEnd())
+                    {
+                        //knight = 2
+                        //bishop = 3
+                        //rook = 4
+                        //queen = 6
+                        createPieces.chessCoordinates[position].isValidMovement = false;
+                        userInterface.drawPawnPromotion();
+                        wait = true;    //used to wait to select promotion for pawn 
+                    }
+                Debug.Log("fasfdsfgs");
+                    swapTurns();
+                    return;
+                }
+            }  
     }
 
     void waitForPromotionSelection()
@@ -227,8 +232,19 @@ public class movePieces : MonoBehaviour
         isFollowMouse = false;
         createPieces.mouseIsHolding = false;
         createPieces.mouseIsPlaced = false;
-
+        Debug.Log(createPieces.playerTurn);
     }
 
+    void swapTurns()
+    {
+        if (createPieces.playerTurn == 0)
+        {
+            createPieces.playerTurn = 1;
+        }   
+        else
+        {
+            createPieces.playerTurn = 0;
+        }     
+    }
 
 }

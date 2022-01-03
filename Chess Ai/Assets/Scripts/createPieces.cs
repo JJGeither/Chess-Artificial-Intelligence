@@ -11,6 +11,8 @@ public class createPieces : MonoBehaviour
     public GameObject[] pieceObjects = new GameObject[64];  //used for directly referencing object
     public int Scale;
 
+    public int playerTurn = 1;
+
     public static readonly int[] incrementAmnts = {
     8,
     -8,
@@ -67,6 +69,20 @@ public class createPieces : MonoBehaviour
         setUpPieces(FENString);
         numToEdge();
         drawPieces();
+    }
+
+    void OnGUI()
+    {
+        string turn;
+        if (playerTurn == 0)
+            turn = "Black";
+        else
+            turn = "White";
+
+        GUIStyle guiStyle = new GUIStyle();
+        guiStyle.fontSize = 100;
+
+        GUI.Label(new Rect(3100, 100, 100, 100), turn + "'s Turn", guiStyle);
     }
 
     public void drawPieces()
@@ -266,7 +282,7 @@ public class createPieces : MonoBehaviour
             {
                 if (0 <= adjMovement[i] && adjMovement[i] <= 63)
                 {
-                    if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && rowDifference(adjMovement[i], pos) == 0)
+                    if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && rowDifference(adjMovement[i], pos) == 0 && chessCoordinates[pos].getColor() != chessCoordinates[adjMovement[i]].getColor())
                     {
                         chessCoordinates[diagonalMovement[i]].isValidMovement = true;
                         chessCoordinates[diagonalMovement[i]].setEnPassantPos(adjMovement[i]);
