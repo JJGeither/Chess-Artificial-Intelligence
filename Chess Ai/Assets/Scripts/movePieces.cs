@@ -77,7 +77,7 @@ public class movePieces : MonoBehaviour
                 else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
                 {
                     removeEnPassantPiece();
-                    replacePiece(createPieces.mouseHolding);
+                    replacePiece(position, createPieces.mouseHolding);
                     reducePawnRange();
                     if (createPieces.chessCoordinates[position].isPawnAtEnd())
                     {
@@ -89,9 +89,9 @@ public class movePieces : MonoBehaviour
                         userInterface.drawPawnPromotion();
                         wait = true;    //used to wait to select promotion for pawn 
                     }
-                Debug.Log("fasfdsfgs");
-                    swapTurns();
-                    return;
+                swapTurns();    //switches whos turn it is
+                createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+                return;
                 }
             }  
     }
@@ -143,12 +143,17 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void removeEnPassantPiece()
+    void removeEnPassantPiece() //used for special movements 
     {
-        if (createPieces.chessCoordinates[position].isEnPassant())
+        int type = createPieces.chessCoordinates[position].getType();
+        if (createPieces.chessCoordinates[position].isSpecialMovement() && type == 1)   //used for en passant
         {
-            emptyPiece(createPieces.chessCoordinates[position].getEnPassantPos());
-            createPieces.chessCoordinates[position].setEnPassant(false);
+            emptyPiece(createPieces.chessCoordinates[position].getSpecialMovementPos());    //will not have a destination
+            createPieces.chessCoordinates[position].setSpecialMovement(false);
+        } else if (createPieces.chessCoordinates[position].isSpecialMovement()) //used for castling
+        {
+            replacePiece(createPieces.chessCoordinates[position].getSpecialMovementDestinationPos(), createPieces.chessCoordinates[position].getSpecialMovementPos());  //will have a destination
+            createPieces.chessCoordinates[position].setSpecialMovement(false);
         }
     }
 
@@ -175,15 +180,16 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void replacePiece(int mouseHolding)
+    void replacePiece(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A
     {
-        int holdingSprite = createPieces.getCoordinateSprite(mouseHolding);
-        this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
-        createPieces.swapPieces(position, mouseHolding);
+        int holdingSprite = createPieces.getCoordinateSprite(posB);
+        createPieces.pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
+        createPieces.pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
+        createPieces.movePiece(posA, posB);
         createPieces.mouseIsPlaced = true;
     }
 
-    void emptyPiece(int pos)
+    void emptyPiece(int pos)    //sets piece at position to new empty
     {
         createPieces.chessCoordinates[pos] = new createPieces.Empty(pos);
         GameObject obj = createPieces.pieceObjects[pos];
@@ -191,14 +197,14 @@ public class movePieces : MonoBehaviour
         
     }
 
-    void cancelMove()
+    void cancelMove()   //cancels the move when selecting original square
     {
         int holdingSprite = createPieces.getCoordinateSprite(createPieces.mouseHolding);
         this.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
         endMovement();
     }
 
-    void reducePawnRange()
+    void reducePawnRange()  //reduces the pawn range from 2 to 1 once moved from it's original spot
     {
         endPassant();
         if (createPieces.chessCoordinates[position].getType() == 1)
@@ -208,9 +214,8 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void endPassant()
+    void endPassant()   //sets all en passant capability to false after turn ends
     {
-        //sets all en passant capability to false after turn ends
         //makes sure that en passant can only be used right after pawn moves
         for (int i = 0; i <= 63; i++)
         {
@@ -218,7 +223,7 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void endMovement()
+    void endMovement()  //the process that is needed to end a turn
     {
         //turns all the valid tiles into invalid ones
         for (int i = 0; i <= 63; i++)
@@ -226,6 +231,7 @@ public class movePieces : MonoBehaviour
             createPieces.chessCoordinates[i].isValidMovement = false;
         }
 
+        
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;          //transforms the piece back
         this.GetComponent<BoxCollider2D>().enabled = true;
@@ -243,7 +249,8 @@ public class movePieces : MonoBehaviour
         }   
         else
         {
-            createPieces.playerTurn = 0;
+            //createPieces.playerTurn = 0;
+            createPieces.playerTurn = 1;    //chagne this
         }     
     }
 

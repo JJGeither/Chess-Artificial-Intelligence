@@ -169,7 +169,7 @@ public class createPieces : MonoBehaviour
     }
 
     //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
-    public void swapPieces(int pieceReplace, int pieceEmpty)
+    public void movePiece(int pieceReplace, int pieceEmpty)
     {
         chessPieceClass temp = chessCoordinates[pieceEmpty];
         chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
@@ -207,6 +207,7 @@ public class createPieces : MonoBehaviour
         int numDirections = directionsAllowed.Length; //the amount of directions it can move in (bishop can move in four directions)
 
         pawnMovement(pos); //handles the special movement of pawns
+        kingCastling(pos);
 
         if (chessCoordinates[pos].getType() != 2) //will have special movement if it is a knight piece
         {
@@ -244,6 +245,41 @@ public class createPieces : MonoBehaviour
         }
     }
 
+    public void kingCastling(int pos)
+    {
+        chessPieceClass piece = chessCoordinates[pos];
+
+        if (piece.getType() == 5 && !piece.hasMoved())
+        {
+            int[] adjMovement = { 2, 3 };
+            if (chessCoordinates[pos].getColor() == 0)  //swaps adj movement depending on color
+            {
+                (adjMovement[0], adjMovement[1]) = (adjMovement[1], adjMovement[0]);
+            }
+
+            for (int j = 0; j < 2; j++)
+            {
+                for (int i = 1; i <= min(numSquareToEdge[pos][adjMovement[j]], 4); i++)
+                {
+                    int checkPos = pos + incrementAmnts[adjMovement[j]] * i;
+                    int castlePos = pos + incrementAmnts[adjMovement[j]] * 2;
+                    if (chessCoordinates[checkPos].getType() == 4 && !chessCoordinates[checkPos].hasMoved())
+                    {
+                        //able to castle
+                        chessCoordinates[castlePos].isValidMovement = true;
+                        chessCoordinates[castlePos].setSpeicalMovementPos(checkPos, pos + incrementAmnts[adjMovement[j]]);
+                        break;
+                    } else if (!chessCoordinates[checkPos].isEmpty())
+                    {
+                        //can't castle
+                        break;
+                    }
+                }
+
+            }
+            
+        }
+    }
     public void pawnMovement(int pos)
     {
 
@@ -282,10 +318,11 @@ public class createPieces : MonoBehaviour
             {
                 if (0 <= adjMovement[i] && adjMovement[i] <= 63)
                 {
+                    //determines if en passsant can happen 
                     if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && rowDifference(adjMovement[i], pos) == 0 && chessCoordinates[pos].getColor() != chessCoordinates[adjMovement[i]].getColor())
                     {
                         chessCoordinates[diagonalMovement[i]].isValidMovement = true;
-                        chessCoordinates[diagonalMovement[i]].setEnPassantPos(adjMovement[i]);
+                        chessCoordinates[diagonalMovement[i]].setSpeicalMovementPos(adjMovement[i]);
                     }
                 }
             }
@@ -359,6 +396,17 @@ public class createPieces : MonoBehaviour
         public int downLeft = 7;
 
         public bool isValidMovement = false;
+
+        int pieceSprite;
+        bool empty = false;
+        int pieceColor;
+        int position;
+        int pieceType;
+        int[] directionsAllowed;
+        int initialPos;
+        int[] specialMovementPos;   //first # is used for what piece to move, second is where to move it to if not deleted instead
+        bool specialMovementValid;
+        bool moved = false;
 
         //used for en passant
         bool moveTwoLastTurn = false;
@@ -460,26 +508,40 @@ public class createPieces : MonoBehaviour
             return pieceType;
         }
 
-
-        public void setEnPassantPos(int pos)
+        public void setSpeicalMovementPos(int pos)
         {
-            enPassantPos = pos;
-            enPassantValid = true;
+            specialMovementPos = new int[1];
+            specialMovementPos[0] = pos;
+            specialMovementValid = true;
         }
 
-        public int getEnPassantPos()
+        public void setSpeicalMovementPos(int piecePosFrom, int piecePosTo)
         {
-            return enPassantPos;
+            specialMovementPos = new int[2];
+            specialMovementPos[0] = piecePosFrom;
+            specialMovementPos[1] = piecePosTo;
+            specialMovementValid = true;
         }
 
-        public bool isEnPassant()
+        public void setSpecialMovement(bool state)
         {
-            return enPassantValid;
+            specialMovementValid = state;
         }
 
-        public void setEnPassant(bool state)
+
+        public int getSpecialMovementPos()
         {
-            enPassantValid = state;
+            return specialMovementPos[0];
+        }
+
+        public int getSpecialMovementDestinationPos()
+        {
+            return specialMovementPos[1];
+        }
+
+        public bool isSpecialMovement()
+        {
+            return specialMovementValid;
         }
 
         public bool isPawnAtEnd()
@@ -501,18 +563,15 @@ public class createPieces : MonoBehaviour
             return false;
         }
 
-        
+        public bool hasMoved()
+        {
+            return moved;
+        }
 
-        int pieceSprite;
-        bool empty = false;
-        int pieceColor;
-        int position;
-        int pieceType;
-        int[] directionsAllowed;
-        int initialPos;
-        int enPassantPos;
-        bool enPassantValid;
-
+        public void setMoved(bool state)
+        {
+            moved = state;
+        }
     }
 
     public class Empty : chessPieceClass
