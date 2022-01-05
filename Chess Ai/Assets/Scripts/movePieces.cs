@@ -41,7 +41,7 @@ public class movePieces : MonoBehaviour
     {
         int playerTurn = createPieces.playerTurn;
         int selectedTurn = createPieces.chessCoordinates[position].getColor();
-        if (selectedTurn == playerTurn)
+        if (selectedTurn ==  playerTurn || playerTurn == -1)    //if turn is -1, able to move any piece however
         {
             //if the mouse is not holding anything and not selecting an empty space
             if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
@@ -225,11 +225,8 @@ public class movePieces : MonoBehaviour
 
     void endMovement()  //the process that is needed to end a turn
     {
-        //turns all the valid tiles into invalid ones
-        for (int i = 0; i <= 63; i++)
-        {
-            createPieces.chessCoordinates[i].isValidMovement = false;
-        }
+        //turns validity off
+        createPieces.nullifyValidity();
 
         
         Destroy(newPiece.gameObject);
@@ -238,7 +235,7 @@ public class movePieces : MonoBehaviour
         isFollowMouse = false;
         createPieces.mouseIsHolding = false;
         createPieces.mouseIsPlaced = false;
-        Debug.Log(createPieces.playerTurn);
+        createPieces.evaluateCheckmate();   //evaluates if player is in check or checkmate
     }
 
     void swapTurns()
@@ -247,10 +244,9 @@ public class movePieces : MonoBehaviour
         {
             createPieces.playerTurn = 1;
         }   
-        else
+        else if (createPieces.playerTurn == 1)
         {
-            //createPieces.playerTurn = 0;
-            createPieces.playerTurn = 1;    //chagne this
+            createPieces.playerTurn = 0;    
         }     
     }
 

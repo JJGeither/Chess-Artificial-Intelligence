@@ -11,7 +11,9 @@ public class createPieces : MonoBehaviour
     public GameObject[] pieceObjects = new GameObject[64];  //used for directly referencing object
     public int Scale;
 
-    public int playerTurn = 1;
+    public int playerTurn = -1;
+
+    public int[] kingPos = new int[2];
 
     public static readonly int[] incrementAmnts = {
     8,
@@ -151,6 +153,7 @@ public class createPieces : MonoBehaviour
                     //King
                     case 'k':
                         chessCoordinates[position] = new King(position, PieceColor);
+                        kingPos[PieceColor] = position;
                         position--;
                         break;
                     //if it's a number
@@ -242,6 +245,33 @@ public class createPieces : MonoBehaviour
         else
         {
             knightMovement(pos);
+        }
+    }
+
+    public void evaluateCheckmate()
+    {
+        int[] oppColor = { 1, 0 };
+        for (int color = 0; color < 2; color++)
+        {
+            for (int i = 0; i <= 63; i++)
+            {
+                if (!chessCoordinates[i].isEmpty() && chessCoordinates[i].getColor() == color)
+                    checkValidity(i);
+            }
+            if (chessCoordinates[kingPos[oppColor[color]]].isValidMovement)
+            {
+                Debug.Log("King Check: " + color);
+            }
+            nullifyValidity();
+        }
+    }
+
+    public void nullifyValidity()
+    {
+        //turns all the valid tiles into invalid ones
+        for (int i = 0; i <= 63; i++)
+        {
+            chessCoordinates[i].isValidMovement = false;
         }
     }
 
