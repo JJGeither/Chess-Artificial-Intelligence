@@ -3,17 +3,48 @@ using System.Collections.Generic;
 using static Unity.Mathematics.math;
 using UnityEngine;
 
+
+
+
+
 public class createPieces : MonoBehaviour
 {
+    private userInterface userInterface;
+    private int playerTurn = 1;
     public string FENString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     public GameObject piecePrefab;
     public chessPieceClass[] chessCoordinates = new chessPieceClass[64];
     public GameObject[] pieceObjects = new GameObject[64];  //used for directly referencing object
     public int Scale;
+    private int checkStatus = -1; //check status, starts at no check
 
-    public int playerTurn = -1;
+    //returns the player turn
+    public int getTurn()
+    {
+        return playerTurn;
+    }
 
-    public int[] kingPos = new int[2];
+    public void setCheckStatus(int newCheckStatus)
+    {
+        checkStatus = newCheckStatus;
+    }
+
+    public int getCheckStatus()
+    {
+        return checkStatus;
+    }
+
+    //sets the player turn
+    public void setTurn(int num)
+    {
+        playerTurn = num;
+    }
+
+    public int[] kingPos = new int[2];  //stores the positions of both kings on the board 
+
+    public int[] isCheckStatus = new int[2];  //stores the check and checkmate status, true if in check/mate and false if not
+    //1 = check
+    //2 = checkmate
 
     public static readonly int[] incrementAmnts = {
     8,
@@ -68,24 +99,12 @@ public class createPieces : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        userInterface = GameObject.Find("PieceHandler").GetComponent<userInterface>();
         setUpPieces(FENString);
         numToEdge();
         drawPieces();
     }
 
-    void OnGUI()
-    {
-        string turn;
-        if (playerTurn == 0)
-            turn = "Black";
-        else
-            turn = "White";
-
-        GUIStyle guiStyle = new GUIStyle();
-        guiStyle.fontSize = 100;
-
-        GUI.Label(new Rect(3100, 100, 100, 100), turn + "'s Turn", guiStyle);
-    }
 
     public void drawPieces()
     {
@@ -171,15 +190,6 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
-    public void movePiece(int pieceReplace, int pieceEmpty)
-    {
-        chessPieceClass temp = chessCoordinates[pieceEmpty];
-        chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
-        chessCoordinates[pieceReplace] = temp;
-        chessCoordinates[pieceReplace].setPosition(pieceReplace);
-    }
-
     //allows to get value of sprite without having direct class
     public int getCoordinateSprite(int coord)
     {
@@ -192,7 +202,42 @@ public class createPieces : MonoBehaviour
         return chessCoordinates[coord].isEmpty();
     }
 
-    public void checkValidity(int pos)
+    public void evaluateCheckMoves(int checkStatus, int position)   //checkstatus is the state of check, position is the piece you want to check 
+    {
+        
+        if (checkStatus == 0)   //if in check
+        {
+            //-1 = no check
+            //0 = check
+            //1 = checkmate
+            List<int> list = new List<int>(63);
+            chessCoordinates[position].clearValidMovementList();
+            nullifyValidity();
+            checkValidity(position);
+            List<int> valid = chessCoordinates[position].getValidMovementList();
+            //displayList(valid);
+            int movementCheckValue;
+            for (int i = 0; i < valid.Count; i++)
+            {
+                var validMovement = valid[i];
+                movementCheckValue = canEscapeCheckmate(position, validMovement); //moves a piece to one of it's movement options 
+                nullifyValidity();
+                if (movementCheckValue == -1)    //if the defending team can prevent checkmate returns -1 else returns the type of piece
+                {
+                    list.Add(validMovement);
+                }
+            }
+            setValidMovementWithList(position,list);
+            displayList(chessCoordinates[position].getValidMovementList());
+            return;
+        }
+        //else if not in check
+        checkValidity(position);
+        return;
+
+    }
+
+    public void checkValidity(int pos)  //determines all the movements that any piece can make
     {
         //0 = up
         //1 = down
@@ -210,7 +255,9 @@ public class createPieces : MonoBehaviour
         int numDirections = directionsAllowed.Length; //the amount of directions it can move in (bishop can move in four directions)
 
         pawnMovement(pos); //handles the special movement of pawns
-        kingCastling(pos);
+
+        if (isCheckStatus[pieceColor] == 0) //can only do if not in check
+            kingCastling(pos);
 
         if (chessCoordinates[pos].getType() != 2) //will have special movement if it is a knight piece
         {
@@ -225,18 +272,19 @@ public class createPieces : MonoBehaviour
                     if (chessCoordinates[checkPos].isEmpty())
                     {
                         //makes tile valid
-                        chessCoordinates[checkPos].isValidMovement = true;
+                        addValidMovement(pos, checkPos);
                     }
                     else if (chessCoordinates[checkPos].getColor() == pieceColor || chessCoordinates[pos].getType() == 1) //will stop prematurly if encounters piece of same color or if its a pawn piece
                     {
                         //makes tile invalid and stops while method if meets same color piece
                         chessCoordinates[checkPos].isValidMovement = false;
+                        chessCoordinates[pos].removeValidMovementList(checkPos);
                         break;
                     }
                     else
                     {
                         //makes tile valid and stops while method if meets a different color piece
-                        chessCoordinates[checkPos].isValidMovement = true;
+                        addValidMovement(pos, checkPos);
                         break;
                     }
                 }
@@ -248,35 +296,197 @@ public class createPieces : MonoBehaviour
         }
     }
 
-    public void evaluateCheckmate()
+    public void nullifyValidity()   //turns all valid tiles into invalid, typically at end of turn
     {
-        int[] oppColor = { 1, 0 };
-        for (int color = 0; color < 2; color++)
-        {
-            for (int i = 0; i <= 63; i++)
-            {
-                if (!chessCoordinates[i].isEmpty() && chessCoordinates[i].getColor() == color)
-                    checkValidity(i);
-            }
-            if (chessCoordinates[kingPos[oppColor[color]]].isValidMovement)
-            {
-                Debug.Log("King Check: " + color);
-            }
-            nullifyValidity();
-        }
-    }
-
-    public void nullifyValidity()
-    {
-        //turns all the valid tiles into invalid ones
         for (int i = 0; i <= 63; i++)
         {
             chessCoordinates[i].isValidMovement = false;
+            chessCoordinates[i].clearValidMovementList(); ;
         }
     }
 
-    public void kingCastling(int pos)
+   
+
+    public int evaluateCheckmate() //checks all possible movement options that a defending team has to prevent checkmate
     {
+
+        //first determines CHECK
+        int checkValue;
+        int checkColor = -1;
+
+        int noCheck = 0;
+        int check = 1;
+        int checkmate = 2;
+
+        int noCheckPiecePos = 0;   //used for setting check value
+        nullifyValidity(); 
+
+        for (int i = 0; i <= 63; i++)   //cycles through each piece and evaluates check
+        {
+            checkValue = evaluateCheckAtPos(i);
+            if (checkValue != -1)   //if there are any pieces that can check the king
+            {
+                noCheckPiecePos = i;
+                checkColor = checkValue;
+                break;
+            } 
+        }
+
+
+
+        if (checkColor == -1)   //if no check was found ends the check
+        {
+            Debug.Log("No Check");
+            isCheckStatus[chessCoordinates[noCheckPiecePos].getColor()] = noCheck;
+            nullifyValidity();
+            return -1;
+        } else
+        {
+            isCheckStatus[checkColor] = check;    //sets colors CHECK to true
+            //Debug.Log("Stat: " + checkColor + " " + isCheckStatus[checkColor]);
+        }
+
+        //now determines if there is a CHECKMATE
+        nullifyValidity();
+        int pieceCheckValue;
+        int movementCheckValue;      //value for INDIVIDUAL movements whether they can check 
+        int completeCheckValue = 0;    //check status is used in determining if Checkmate is happening or not.
+        int test1 = 0, test2 = 0;
+        for (int defPos = 0; defPos <= 63; defPos++)   //if a check is found it then cycles through all pieces of the defending color
+        {
+            pieceCheckValue = 0;
+            if (!chessCoordinates[defPos].isEmpty() && chessCoordinates[defPos].getColor() == checkColor) //checks all move the defending color can do to respond
+            {
+                chessCoordinates[defPos].clearValidMovementList(); ; //clears all previous valid movements
+                checkValidity(defPos);   //re-evaluates what movements the piece can make
+                List<int> list = new List<int>(chessCoordinates[defPos].getValidMovementList()); //creates a list of all the possible movmenet options a piece can make
+                List<int> checkMovements = new List<int>(); //has a list of all the movements that the defending team can make in order to get out of check
+                
+                foreach (int validMovement in list) //cycles through all movements each defending piece can make
+                {
+                    movementCheckValue = canEscapeCheckmate(defPos, validMovement); //moves a piece to one of it's movement options 
+                    if (movementCheckValue == -1)    //if the defending team can prevent checkmate returns -1 else returns the type of piece
+                    {
+                        test1++;
+                        checkMovements.Add(validMovement);
+                        //Debug.Log("checkMove: " + defPos + " " + checkMovements[0]);
+                        pieceCheckValue = movementCheckValue; //only swaps check status if at least one movement can check
+                    }
+                }
+
+                if (pieceCheckValue == -1) //check status is used in determining if Checkmate is happening or not.
+                    completeCheckValue = -1;
+                else
+                    test2++;
+
+                checkMovements.Clear();
+                list.Clear();
+            }
+        }
+        Debug.Log("number check:" + test1);
+        Debug.Log("number cleared:" + test2);
+        if (completeCheckValue != -1) //if a checkmate is found
+        {
+            Debug.Log("Checkmate");
+            isCheckStatus[checkColor] = checkmate;
+            //Debug.Log("Stat: " + checkColor + " " + isCheckStatus[checkColor]);
+            //nullifyValidity();
+            userInterface.playerWins(checkColor);
+            return 1;
+        }
+        else //if a checkmate is NOT found (checkreturnvalue == -1)
+        {
+            Debug.Log("No Checkmate");  //if a check is found with no checkmate
+            //Debug.Log("Stat: " + checkColor + " " + isCheckStatus[checkColor]);
+            //nullifyValidity();
+            return 0;
+        }
+
+    }
+
+     public int evaluateCheckAtPos(int pos) //checks if piece at pos can check the king
+    {
+        int[] oppColor = { 1, 0 };
+        int color;
+
+        if (!chessCoordinates[pos].isEmpty())   //checks all valid movements that a piece can make
+        {
+            checkValidity(pos);
+            color = chessCoordinates[pos].getColor();
+        }
+        else
+            return -1;  //if empty, returns false
+        if (chessCoordinates[kingPos[oppColor[color]]].isValidMovement)     //checks if the king is one of the valid movements a piece can make
+        {
+            return oppColor[color]; //returns the color of the king that is in check
+        }
+        return -1;
+    }
+
+    public int canEscapeCheckmate(int i, int k) //moves piece i to valid movement k
+    {
+        int kingInitPos = kingPos[chessCoordinates[i].getColor()];  //sets the initial king position to store when moving the king
+        int color = chessCoordinates[i].getColor(); //gets the color of the defending team
+        int[] oppColor = { 1, 0 };  //color of the attacking team
+        int checkValue = -1;
+        chessPieceClass[] temp2 = { chessCoordinates[i], chessCoordinates[k] }; //stores the initla positions of the pieces
+        replacePiece2(k, i); //moves a piece to one of it's valid movements
+        nullifyValidity();  //resets valid movements
+
+        for (int atkPos = 0; atkPos <= 63; atkPos++)   //checsk all the responses of the attacking team
+        {
+            if (chessCoordinates[atkPos].getColor() == oppColor[color])
+            {
+                checkValue = evaluateCheckAtPos(atkPos);
+                if (checkValue == color)  //if the team can still checkmate, can't do this move and returns piece value
+                    break;   
+            }
+        }
+        //revert change that was made by replace piece
+        chessCoordinates[i] = temp2[0];
+        chessCoordinates[k] = temp2[1];
+        pieceObjects[i].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[0].getSprite()];
+        pieceObjects[k].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[1].getSprite()];
+        kingPos[color] = kingInitPos;   //moves the king back to it's initial position
+        return checkValue;    //returns value of checkmate
+    }
+
+    public void replacePiece(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A
+    {
+        if (chessCoordinates[posB].getType() == 5)
+            kingPos[chessCoordinates[posB].getColor()] = posA;
+
+        int holdingSprite = getCoordinateSprite(posB);
+        pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
+        pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
+        movePiece(posA, posB);
+        mouseIsPlaced = true;
+    }
+
+    public void replacePiece2(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A
+    {
+        if (chessCoordinates[posB].getType() == 5)
+            kingPos[chessCoordinates[posB].getColor()] = posA;
+
+        int holdingSprite = getCoordinateSprite(posB);
+        pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
+        pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
+        movePiece(posA, posB);
+        //mouseIsPlaced = true;
+    }
+
+    //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
+    public void movePiece(int pieceReplace, int pieceEmpty)
+    {
+        chessPieceClass temp = chessCoordinates[pieceEmpty];
+        chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
+        chessCoordinates[pieceReplace] = temp;
+        chessCoordinates[pieceReplace].setPosition(pieceReplace);
+    }
+
+    public void kingCastling(int pos)   //movement for king to castle
+    {
+
         chessPieceClass piece = chessCoordinates[pos];
 
         if (piece.getType() == 5 && !piece.hasMoved())
@@ -293,17 +503,20 @@ public class createPieces : MonoBehaviour
                 {
                     int checkPos = pos + incrementAmnts[adjMovement[j]] * i;
                     int castlePos = pos + incrementAmnts[adjMovement[j]] * 2;
+
+                    
+
                     if (chessCoordinates[checkPos].getType() == 4 && !chessCoordinates[checkPos].hasMoved())
                     {
                         //able to castle
-                        chessCoordinates[castlePos].isValidMovement = true;
+                        addValidMovement(pos, castlePos);
                         chessCoordinates[castlePos].setSpeicalMovementPos(checkPos, pos + incrementAmnts[adjMovement[j]]);
                         break;
                     } else if (!chessCoordinates[checkPos].isEmpty())
                     {
                         //can't castle
                         break;
-                    }
+                    } 
                 }
 
             }
@@ -331,7 +544,7 @@ public class createPieces : MonoBehaviour
                 {
                     if (chessCoordinates[diagonalMovement[dir]].getColor() != piece.getColor() && chessCoordinates[diagonalMovement[dir]].getColor() >= 0 && rowDifference(diagonalMovement[dir], pos) == 1)
                     {
-                        chessCoordinates[diagonalMovement[dir]].isValidMovement = true;
+                        addValidMovement(pos, diagonalMovement[dir]);
                     }
                 }
                     
@@ -351,7 +564,7 @@ public class createPieces : MonoBehaviour
                     //determines if en passsant can happen 
                     if (chessCoordinates[adjMovement[i]].getMoveTwoLastTurn() && rowDifference(adjMovement[i], pos) == 0 && chessCoordinates[pos].getColor() != chessCoordinates[adjMovement[i]].getColor())
                     {
-                        chessCoordinates[diagonalMovement[i]].isValidMovement = true;
+                        addValidMovement(pos, diagonalMovement[i]);
                         chessCoordinates[diagonalMovement[i]].setSpeicalMovementPos(adjMovement[i]);
                     }
                 }
@@ -385,7 +598,7 @@ public class createPieces : MonoBehaviour
                 if (chessCoordinates[checkPos].isEmpty())
                 {
                     //makes tile valid
-                    chessCoordinates[checkPos].isValidMovement = true;
+                    addValidMovement(pos, checkPos);
                 }
                 else if (chessCoordinates[pos].getColor() == chessCoordinates[checkPos].getColor()) //will stop prematurly if encounters piece of same color or if its a pawn piece
                 {
@@ -395,13 +608,38 @@ public class createPieces : MonoBehaviour
                 else
                 {
                     //makes tile valid and stops while method if meets a different color piece
-                    chessCoordinates[checkPos].isValidMovement = true;
-
+                    addValidMovement(pos, checkPos);
                 }
             }
         }
     }
 
+ 
+
+    public void addValidMovement(int pos, int checkPos)
+    {
+        chessCoordinates[checkPos].isValidMovement = true;
+        chessCoordinates[pos].addValidMovementList(checkPos);
+    }
+
+    public void setValidMovementWithList(int pos, List<int> checkMovement)
+    {
+        chessCoordinates[pos].clearValidMovementList();
+        for (int i = 0; i < checkMovement.Count; i++)
+        {
+            chessCoordinates[pos].addValidMovementList(checkMovement[i]);
+            chessCoordinates[checkMovement[i]].isValidMovement = true;
+        }
+
+    }
+
+    public void displayList(List<int> checkMovement)
+    {
+        for (int i = 0; i < checkMovement.Count; i++)
+        {
+            Debug.Log("List: " + checkMovement[i]);
+        }
+    }
     public class chessPieceClass
     {
 
@@ -436,7 +674,9 @@ public class createPieces : MonoBehaviour
         int initialPos;
         int[] specialMovementPos;   //first # is used for what piece to move, second is where to move it to if not deleted instead
         bool specialMovementValid;
+        int specialMovementType;
         bool moved = false;
+        private List<int> validMovementsList = new List<int>();
 
         //used for en passant
         bool moveTwoLastTurn = false;
@@ -459,6 +699,26 @@ public class createPieces : MonoBehaviour
         public void setPosition(int tilePosition)
         {
             position = tilePosition;
+        }
+
+        public void addValidMovementList(int pos)   //makes a piece able to move to pos tile
+        {
+            validMovementsList.Add(pos);
+        }
+
+        public void clearValidMovementList()
+        {
+            validMovementsList.Clear();
+        }
+
+        public List<int> getValidMovementList()
+        {
+            return validMovementsList;
+        }
+
+        public void removeValidMovementList(int pos)
+        {
+            validMovementsList.Remove(pos);
         }
 
         public void setEmpty(bool state)
@@ -540,6 +800,7 @@ public class createPieces : MonoBehaviour
 
         public void setSpeicalMovementPos(int pos)
         {
+            specialMovementType = 1;    //used only for pawns
             specialMovementPos = new int[1];
             specialMovementPos[0] = pos;
             specialMovementValid = true;
@@ -547,10 +808,16 @@ public class createPieces : MonoBehaviour
 
         public void setSpeicalMovementPos(int piecePosFrom, int piecePosTo)
         {
+            specialMovementType = 5;    //used only for rooks (and kings)
             specialMovementPos = new int[2];
             specialMovementPos[0] = piecePosFrom;
             specialMovementPos[1] = piecePosTo;
             specialMovementValid = true;
+        }
+
+        public int getSpecialMovementType()
+        {
+            return specialMovementType;
         }
 
         public void setSpecialMovement(bool state)
@@ -573,6 +840,8 @@ public class createPieces : MonoBehaviour
         {
             return specialMovementValid;
         }
+
+        
 
         public bool isPawnAtEnd()
         {

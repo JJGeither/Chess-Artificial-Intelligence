@@ -10,6 +10,7 @@ public class movePieces : MonoBehaviour
     bool isFollowMouse = false;
 
     bool wait = false;
+    public bool isCheckStatus;
 
     private createPieces createPieces;
     private userInterface userInterface;
@@ -39,15 +40,22 @@ public class movePieces : MonoBehaviour
 
     private void OnMouseDown()
     {
-        int playerTurn = createPieces.playerTurn;
+        Debug.Log("Check Status: " + createPieces.getCheckStatus());
+        Debug.Log("Turn: " + createPieces.getTurn());
         int selectedTurn = createPieces.chessCoordinates[position].getColor();
-        if (selectedTurn ==  playerTurn || playerTurn == -1)    //if turn is -1, able to move any piece however
+        if (selectedTurn == createPieces.getTurn() || createPieces.getTurn() == -1)    //if turn is -1, able to move any piece however
         {
             //if the mouse is not holding anything and not selecting an empty space
             if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
             {
                 //sets validity
-                createPieces.checkValidity(position);
+                //createPieces.checkValidity(position);
+
+                //-1 = no check
+                //0 = check
+                //1 = checkmate
+
+                createPieces.evaluateCheckMoves(createPieces.getCheckStatus(), position);  //evaluates all the pieces that a defending piece can make to prevent checkmate
 
                 //sets the original position to reference later
                 originalPos = this.transform.position;
@@ -77,7 +85,7 @@ public class movePieces : MonoBehaviour
                 else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
                 {
                     removeEnPassantPiece();
-                    replacePiece(position, createPieces.mouseHolding);
+                    createPieces.replacePiece(position, createPieces.mouseHolding);
                     reducePawnRange();
                     if (createPieces.chessCoordinates[position].isPawnAtEnd())
                     {
@@ -89,12 +97,18 @@ public class movePieces : MonoBehaviour
                         userInterface.drawPawnPromotion();
                         wait = true;    //used to wait to select promotion for pawn 
                     }
-                swapTurns();    //switches whos turn it is
-                createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
-                return;
+                    swapTurns();    //switches whos turn it is
+                    updateKingPos();
+                    createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+                    createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+                    createPieces.nullifyValidity();
+                    Debug.Log("Check Status: " + createPieces.getCheckStatus());
+                    return;
                 }
             }  
     }
+
+    
 
     void waitForPromotionSelection()
     {
@@ -146,13 +160,14 @@ public class movePieces : MonoBehaviour
     void removeEnPassantPiece() //used for special movements 
     {
         int type = createPieces.chessCoordinates[position].getType();
-        if (createPieces.chessCoordinates[position].isSpecialMovement() && type == 1)   //used for en passant
+        createPieces.chessPieceClass piece = createPieces.chessCoordinates[position];
+        if (piece.isSpecialMovement() && piece.getSpecialMovementType() == 1)   //used for en passant
         {
             emptyPiece(createPieces.chessCoordinates[position].getSpecialMovementPos());    //will not have a destination
             createPieces.chessCoordinates[position].setSpecialMovement(false);
-        } else if (createPieces.chessCoordinates[position].isSpecialMovement()) //used for castling
+        } else if (createPieces.chessCoordinates[position].isSpecialMovement() && piece.getSpecialMovementType() == 5) //used for castling
         {
-            replacePiece(createPieces.chessCoordinates[position].getSpecialMovementDestinationPos(), createPieces.chessCoordinates[position].getSpecialMovementPos());  //will have a destination
+            createPieces.replacePiece(createPieces.chessCoordinates[position].getSpecialMovementDestinationPos(), createPieces.chessCoordinates[position].getSpecialMovementPos());  //will have a destination
             createPieces.chessCoordinates[position].setSpecialMovement(false);
         }
     }
@@ -180,14 +195,7 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void replacePiece(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A
-    {
-        int holdingSprite = createPieces.getCoordinateSprite(posB);
-        createPieces.pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[holdingSprite];
-        createPieces.pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
-        createPieces.movePiece(posA, posB);
-        createPieces.mouseIsPlaced = true;
-    }
+    
 
     void emptyPiece(int pos)    //sets piece at position to new empty
     {
@@ -229,25 +237,32 @@ public class movePieces : MonoBehaviour
         createPieces.nullifyValidity();
 
         
+        
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;          //transforms the piece back
         this.GetComponent<BoxCollider2D>().enabled = true;
         isFollowMouse = false;
         createPieces.mouseIsHolding = false;
         createPieces.mouseIsPlaced = false;
-        createPieces.evaluateCheckmate();   //evaluates if player is in check or checkmate
+    }
+
+    void updateKingPos()
+    {
+        if (createPieces.chessCoordinates[position].getType() == 5) //updates kings position
+        {
+            createPieces.kingPos[createPieces.chessCoordinates[position].getColor()] = position;
+        }
     }
 
     void swapTurns()
     {
-        if (createPieces.playerTurn == 0)
+        if (createPieces.getTurn() == 0)
         {
-            createPieces.playerTurn = 1;
+            createPieces.setTurn(1);
         }   
-        else if (createPieces.playerTurn == 1)
+        else if (createPieces.getTurn() == 1)
         {
-            createPieces.playerTurn = 0;    
+            createPieces.setTurn(0);    
         }     
     }
-
 }

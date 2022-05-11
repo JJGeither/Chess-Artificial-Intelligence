@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class userInterface : MonoBehaviour
 {
     public GameObject UIPrefab;
+    private createPieces createPieces;
 
     [Header("Chess Sprites")]
     public Sprite[] pieceSheet = new Sprite[8];
@@ -15,6 +17,7 @@ public class userInterface : MonoBehaviour
     static int queen = 6;
     static int[] pieceType = { knight, bishop, rook, queen };
 
+    private int playerHasWon = -1;
     public int pos;
     public int type;
 
@@ -23,14 +26,54 @@ public class userInterface : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        createPieces = GameObject.Find("PieceHandler").GetComponent<createPieces>();
+    }
+
+    public void setWin(int player)  //sets what player wins
+    {
+        playerHasWon = player;
+    }
+
+    public int getWin()  //gets what player wins
+    {
+        return playerHasWon;
+    }
+
+    string convertTurn(int turnNum)
+    {
+        string turn;
+        if (turnNum == 1)
+            turn = "Black";
+        else if (turnNum == 0)
+            turn = "White";
+        else
+            turn = "N/A";
+        return turn;
+    }
+    void OnGUI()
+    {
+
+        string turn = convertTurn(createPieces.getTurn());
+
+        GUIStyle guiStyle = new GUIStyle();
+        guiStyle.fontSize = 100;
+
+
+
+        GUI.Label(new Rect(3100, 100, 100, 100), turn + "'s Turn", guiStyle);
+
+        if (getWin() != -1)  //if checkmate has happened
+        {
+            
+            GUIStyle guiStyleCheckmate = new GUIStyle();
+            guiStyleCheckmate.fontSize = 1000;
+            guiStyleCheckmate.normal.textColor = Color.white;
+            Rect position = new Rect((Screen.width) / 2 - (Screen.width) / 8, (Screen.height) / 2 - (Screen.height) / 8, (Screen.width) / 4, (Screen.height) / 4);
+            GUI.Label(position, turn + " has won!", guiStyleCheckmate);
+        }
     }
 
     // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     public void drawPawnPromotion()
     {
@@ -58,6 +101,11 @@ public class userInterface : MonoBehaviour
             promotionUI[i + 1] = newUI;
         }
         
+    }
+
+    public void playerWins(int color)
+    {
+        setWin(color);
     }
 
     public void destroyPromotionUI()
