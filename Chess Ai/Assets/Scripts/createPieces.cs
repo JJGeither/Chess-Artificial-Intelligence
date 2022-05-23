@@ -103,6 +103,9 @@ public class createPieces : MonoBehaviour
         setUpPieces(FENString);
         numToEdge();
         drawPieces();
+
+        setCheckStatus(evaluateCheckmate());    //determines if starting setup results in check or not
+        nullifyValidity();
     }
 
 
@@ -210,29 +213,31 @@ public class createPieces : MonoBehaviour
             //-1 = no check
             //0 = check
             //1 = checkmate
-            List<int> list = new List<int>(63);
+            List<int> checkmateFreeMoves = new List<int>(63); //list of all moves that will not lead to checkmate
             chessCoordinates[position].clearValidMovementList();
             nullifyValidity();
             checkValidity(position);
             List<int> valid = chessCoordinates[position].getValidMovementList();
-            //displayList(valid);
             int movementCheckValue;
             for (int i = 0; i < valid.Count; i++)
             {
                 var validMovement = valid[i];
                 movementCheckValue = canEscapeCheckmate(position, validMovement); //moves a piece to one of it's movement options 
                 nullifyValidity();
+                checkValidity(position);
                 if (movementCheckValue == -1)    //if the defending team can prevent checkmate returns -1 else returns the type of piece
                 {
-                    list.Add(validMovement);
+                    checkmateFreeMoves.Add(validMovement);
                 }
             }
-            setValidMovementWithList(position,list);
+            nullifyValidity();
+            setValidMovementWithList(position, checkmateFreeMoves);
             displayList(chessCoordinates[position].getValidMovementList());
             return;
         }
         //else if not in check
         checkValidity(position);
+        canMoveWithoutCheck(position);
         return;
 
     }
@@ -296,12 +301,56 @@ public class createPieces : MonoBehaviour
         }
     }
 
+    public void canMoveWithoutCheck(int pos)    //prevents a piece from moving out of the way causing a check to happen
+    {
+         
+        List<int> movements = chessCoordinates[pos].getValidMovementList(); //copy of all moveable moves for a piece
+        List<int> list = movements; //copy of the movements, removes as neccesary
+
+        int kingInitPos = kingPos[chessCoordinates[pos].getColor()];  //sets the initial king position to store when moving the king
+        int color = chessCoordinates[pos].getColor(); //gets the color of the defending team
+        int[] oppColor = { 1, 0 };  //color of the attacking team
+        int checkValue = -1;    //used to determine check
+        
+
+        for (int i = 0; i < movements.Count; i++)  //sees if can move piece without causing check
+        {
+            chessPieceClass[] temp2 = { chessCoordinates[pos], chessCoordinates[movements[i]] }; //stores the initla positions of the pieces
+            replacePieceTemp(movements[i], pos);    //moves pos to movements
+            
+            for (int atkPos = 0; atkPos <= 63; atkPos++)   //checks all the responses of the attacking team
+            {
+                if (chessCoordinates[atkPos].getColor() == oppColor[color])
+                {
+                    checkValue = 123;//evaluateCheckAtPos(atkPos);
+                    if (checkValue == color)  //if the team can checkmate, can't do this move and returns piece value
+                    {
+                        list.Remove(movements[i]);  //removes from valid list
+                        break;
+                    }
+                        
+                }
+            }
+
+            //revert change that was made by replace piece
+            chessCoordinates[pos] = temp2[0];
+            chessCoordinates[movements[i]] = temp2[1];
+            pieceObjects[pos].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[0].getSprite()];
+            pieceObjects[movements[i]].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[1].getSprite()];
+            kingPos[color] = kingInitPos;   //moves the king back to it's initial position
+           
+        }
+
+        return;
+
+    }
+
     public void nullifyValidity()   //turns all valid tiles into invalid, typically at end of turn
     {
         for (int i = 0; i <= 63; i++)
         {
             chessCoordinates[i].isValidMovement = false;
-            chessCoordinates[i].clearValidMovementList(); ;
+            chessCoordinates[i].clearValidMovementList();
         }
     }
 
@@ -314,9 +363,11 @@ public class createPieces : MonoBehaviour
         int checkValue;
         int checkColor = -1;
 
-        int noCheck = 0;
+       // int noCheck = 0;
         int check = 1;
         int checkmate = 2;
+
+        int[] oppColor = { 1, 0 };
 
         int noCheckPiecePos = 0;   //used for setting check value
         nullifyValidity(); 
@@ -337,7 +388,8 @@ public class createPieces : MonoBehaviour
         if (checkColor == -1)   //if no check was found ends the check
         {
             Debug.Log("No Check");
-            isCheckStatus[chessCoordinates[noCheckPiecePos].getColor()] = noCheck;
+            //isCheckStatus[chessCoordinates[noCheckPiecePos].getColor()] = noCheck;
+            //isCheckStatus[checkColor] = noCheck;
             nullifyValidity();
             return -1;
         } else
@@ -391,7 +443,7 @@ public class createPieces : MonoBehaviour
             isCheckStatus[checkColor] = checkmate;
             //Debug.Log("Stat: " + checkColor + " " + isCheckStatus[checkColor]);
             //nullifyValidity();
-            userInterface.playerWins(checkColor);
+            userInterface.playerWins(oppColor[checkColor]);
             return 1;
         }
         else //if a checkmate is NOT found (checkreturnvalue == -1)
@@ -430,7 +482,7 @@ public class createPieces : MonoBehaviour
         int[] oppColor = { 1, 0 };  //color of the attacking team
         int checkValue = -1;
         chessPieceClass[] temp2 = { chessCoordinates[i], chessCoordinates[k] }; //stores the initla positions of the pieces
-        replacePiece2(k, i); //moves a piece to one of it's valid movements
+        replacePieceTemp(k, i); //moves a piece to one of it's valid movements
         nullifyValidity();  //resets valid movements
 
         for (int atkPos = 0; atkPos <= 63; atkPos++)   //checsk all the responses of the attacking team
@@ -463,7 +515,7 @@ public class createPieces : MonoBehaviour
         mouseIsPlaced = true;
     }
 
-    public void replacePiece2(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A
+    public void replacePieceTemp(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A, but doesn't place piece down
     {
         if (chessCoordinates[posB].getType() == 5)
             kingPos[chessCoordinates[posB].getColor()] = posA;
@@ -472,7 +524,7 @@ public class createPieces : MonoBehaviour
         pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
         pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
         movePiece(posA, posB);
-        //mouseIsPlaced = true;
+        
     }
 
     //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
@@ -523,7 +575,7 @@ public class createPieces : MonoBehaviour
             
         }
     }
-    public void pawnMovement(int pos)
+    public void pawnMovement(int pos)   //the movement of the pawn
     {
 
         chessPieceClass piece = chessCoordinates[pos];
@@ -551,7 +603,7 @@ public class createPieces : MonoBehaviour
             }
 
             //en passant
-            int[] adjMovement = {  pos + 1 , pos - 1 };
+            int[] adjMovement = {  pos + 1 , pos - 1 }; //the pieces to the left and right
             if (chessCoordinates[pos].getColor() == 0)  //swaps adj movement depending on color
             {
                 (adjMovement[0], adjMovement[1]) = (adjMovement[1], adjMovement[0]);
@@ -828,12 +880,16 @@ public class createPieces : MonoBehaviour
 
         public int getSpecialMovementPos()
         {
-            return specialMovementPos[0];
+            if (specialMovementPos.Length != 0)
+                return specialMovementPos[0];
+            return position;
         }
 
         public int getSpecialMovementDestinationPos()
         {
-            return specialMovementPos[1];
+            if (specialMovementPos.Length != 0)
+                return specialMovementPos[1];
+            return position;
         }
 
         public bool isSpecialMovement()

@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59e9065be2b2d6b4fa33e7947aec854f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FENString: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
+  FENString: rnb1kbnr/pppp1ppp/8/8/4P2q/1P6/P1PP3P/RNBQKBNR
   piecePrefab: {fileID: 321986270840257195, guid: 79fd1b14b00b4494ca8057b7ed3d42df, type: 3}
   pieceObjects:
   - {fileID: 0}
@@ -112,6 +112,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   Scale: 1
+  kingPos: 0000000000000000
+  isCheckStatus: 0000000000000000
   mouseHolding: 0
   mouseIsHolding: 0
   mouseIsPlaced: 0
@@ -151,3 +153,5 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f40f4e2c456bc1446af61ea5eba772e5, type: 3}
   - {fileID: 21300000, guid: 1d7096b3ed8d7f245acc8f54971c1b36, type: 3}
   - {fileID: 21300000, guid: d4a01c701b78c86438cc06f68d627f81, type: 3}
+  pos: 0
+  type: 0

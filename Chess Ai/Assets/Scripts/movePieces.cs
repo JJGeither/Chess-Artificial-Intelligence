@@ -48,9 +48,6 @@ public class movePieces : MonoBehaviour
             //if the mouse is not holding anything and not selecting an empty space
             if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
             {
-                //sets validity
-                //createPieces.checkValidity(position);
-
                 //-1 = no check
                 //0 = check
                 //1 = checkmate
@@ -108,6 +105,30 @@ public class movePieces : MonoBehaviour
             }  
     }
 
+    public void move(int FromPos, int ToPos)    //moves FromPos to ToPos
+    {
+        removeEnPassantPiece(); //used for special movements
+        createPieces.replacePiece(position, createPieces.mouseHolding); //moves first element to the second element
+        reducePawnRange();
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())  //determines if a pawn is at end and allows to promote it
+        {
+            //knight = 2
+            //bishop = 3
+            //rook = 4
+            //queen = 6
+            createPieces.chessCoordinates[position].isValidMovement = false;
+            userInterface.drawPawnPromotion();
+            wait = true;    //used to wait to select promotion for pawn 
+        }
+        swapTurns();    //switches whos turn it is
+        updateKingPos();    //self explanitory
+        createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());     //sets a value depending on whether or not pieces or in check
+        createPieces.nullifyValidity(); //sets all spaces to invalid
+        Debug.Log("Check Status: " + createPieces.getCheckStatus());
+        return;
+    }
+
     
 
     void waitForPromotionSelection()
@@ -119,6 +140,9 @@ public class movePieces : MonoBehaviour
             if (type != 0)
             {
                 setPieceTo(type);
+                createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+                createPieces.nullifyValidity();
+                createPieces.evaluateCheckMoves(createPieces.getCheckStatus(), position);  //evaluates all the pieces that a defending piece can make to prevent checkmate
             }
         }
     }
@@ -165,6 +189,7 @@ public class movePieces : MonoBehaviour
         {
             emptyPiece(createPieces.chessCoordinates[position].getSpecialMovementPos());    //will not have a destination
             createPieces.chessCoordinates[position].setSpecialMovement(false);
+           // createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
         } else if (createPieces.chessCoordinates[position].isSpecialMovement() && piece.getSpecialMovementType() == 5) //used for castling
         {
             createPieces.replacePiece(createPieces.chessCoordinates[position].getSpecialMovementDestinationPos(), createPieces.chessCoordinates[position].getSpecialMovementPos());  //will have a destination
@@ -218,7 +243,9 @@ public class movePieces : MonoBehaviour
         if (createPieces.chessCoordinates[position].getType() == 1)
         {
             createPieces.chessCoordinates[position].setRange(1);
-            createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
+            //WORK ON THISSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+            if (createPieces.rowDifference(position, createPieces.mouseHolding) == 2)
+                createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
         }
     }
 
@@ -235,9 +262,6 @@ public class movePieces : MonoBehaviour
     {
         //turns validity off
         createPieces.nullifyValidity();
-
-        
-        
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;          //transforms the piece back
         this.GetComponent<BoxCollider2D>().enabled = true;

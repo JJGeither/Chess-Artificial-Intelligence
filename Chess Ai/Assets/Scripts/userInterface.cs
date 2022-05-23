@@ -42,9 +42,9 @@ public class userInterface : MonoBehaviour
     string convertTurn(int turnNum)
     {
         string turn;
-        if (turnNum == 1)
+        if (turnNum == 0)
             turn = "Black";
-        else if (turnNum == 0)
+        else if (turnNum == 1)
             turn = "White";
         else
             turn = "N/A";
@@ -52,23 +52,22 @@ public class userInterface : MonoBehaviour
     }
     void OnGUI()
     {
-
         string turn = convertTurn(createPieces.getTurn());
 
         GUIStyle guiStyle = new GUIStyle();
         guiStyle.fontSize = 100;
-
-
-
         GUI.Label(new Rect(3100, 100, 100, 100), turn + "'s Turn", guiStyle);
 
         if (getWin() != -1)  //if checkmate has happened
         {
-            
+            turn = convertTurn(getWin());
             GUIStyle guiStyleCheckmate = new GUIStyle();
             guiStyleCheckmate.fontSize = 1000;
             guiStyleCheckmate.normal.textColor = Color.white;
-            Rect position = new Rect((Screen.width) / 2 - (Screen.width) / 8, (Screen.height) / 2 - (Screen.height) / 8, (Screen.width) / 4, (Screen.height) / 4);
+
+            var w = 3400;
+            var h = 300;
+            Rect position = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
             GUI.Label(position, turn + " has won!", guiStyleCheckmate);
         }
     }
