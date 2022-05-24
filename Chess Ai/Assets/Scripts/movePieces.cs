@@ -7,7 +7,7 @@ public class movePieces : MonoBehaviour
     public int position;
     private SpriteRenderer spriteRenderer;
     Vector3 originalPos;
-    bool isFollowMouse = false;
+    private bool isFollowMouse = false;
 
     bool wait = false;
     public bool isCheckStatus;
@@ -61,7 +61,8 @@ public class movePieces : MonoBehaviour
                 newPiece = Instantiate(piecePrefab, originalPos, Quaternion.Euler(0f, 0f, 0f));
 
                 //makes it so that this object will follow the mouse position until it is moved
-                isFollowMouse = true;
+                setFollowMouse(true);
+                //isFollowMouse = true;
 
                 //sets sprite to empty
                 this.GetComponent<SpriteRenderer>().sprite = null;
@@ -81,36 +82,17 @@ public class movePieces : MonoBehaviour
                 }
                 else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
                 {
-                    removeEnPassantPiece();
-                    createPieces.replacePiece(position, createPieces.mouseHolding);
-                    reducePawnRange();
-                    if (createPieces.chessCoordinates[position].isPawnAtEnd())
-                    {
-                        //knight = 2
-                        //bishop = 3
-                        //rook = 4
-                        //queen = 6
-                        createPieces.chessCoordinates[position].isValidMovement = false;
-                        userInterface.drawPawnPromotion();
-                        wait = true;    //used to wait to select promotion for pawn 
-                    }
-                    swapTurns();    //switches whos turn it is
-                    updateKingPos();
-                    createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
-                    createPieces.setCheckStatus(createPieces.evaluateCheckmate());
-                    createPieces.nullifyValidity();
-                    Debug.Log("Check Status: " + createPieces.getCheckStatus());
-                    return;
+                    move(createPieces.mouseHolding, position); //moves pieces
                 }
             }  
     }
 
-    public void move(int FromPos, int ToPos)    //moves FromPos to ToPos
+    public void move(int fromPos, int toPos)
     {
-        removeEnPassantPiece(); //used for special movements
-        createPieces.replacePiece(position, createPieces.mouseHolding); //moves first element to the second element
+        removeEnPassantPiece();
+        createPieces.replacePiece(toPos, fromPos);
         reducePawnRange();
-        if (createPieces.chessCoordinates[position].isPawnAtEnd())  //determines if a pawn is at end and allows to promote it
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())
         {
             //knight = 2
             //bishop = 3
@@ -121,15 +103,13 @@ public class movePieces : MonoBehaviour
             wait = true;    //used to wait to select promotion for pawn 
         }
         swapTurns();    //switches whos turn it is
-        updateKingPos();    //self explanitory
+        updateKingPos();
         createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
-        createPieces.setCheckStatus(createPieces.evaluateCheckmate());     //sets a value depending on whether or not pieces or in check
-        createPieces.nullifyValidity(); //sets all spaces to invalid
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        createPieces.nullifyValidity();
         Debug.Log("Check Status: " + createPieces.getCheckStatus());
         return;
     }
-
-    
 
     void waitForPromotionSelection()
     {
@@ -143,8 +123,19 @@ public class movePieces : MonoBehaviour
                 createPieces.setCheckStatus(createPieces.evaluateCheckmate());
                 createPieces.nullifyValidity();
                 createPieces.evaluateCheckMoves(createPieces.getCheckStatus(), position);  //evaluates all the pieces that a defending piece can make to prevent checkmate
+                createPieces.nullifyValidity();
             }
         }
+    }
+
+    public void setFollowMouse(bool set)
+    {
+        isFollowMouse = set;
+    }
+
+    public bool getFollowMouse()
+    {
+        return isFollowMouse;
     }
 
     void setPieceTo(int pieceType)
@@ -243,7 +234,6 @@ public class movePieces : MonoBehaviour
         if (createPieces.chessCoordinates[position].getType() == 1)
         {
             createPieces.chessCoordinates[position].setRange(1);
-            //WORK ON THISSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
             if (createPieces.rowDifference(position, createPieces.mouseHolding) == 2)
                 createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
         }
@@ -265,7 +255,8 @@ public class movePieces : MonoBehaviour
         Destroy(newPiece.gameObject);
         this.transform.position = originalPos;          //transforms the piece back
         this.GetComponent<BoxCollider2D>().enabled = true;
-        isFollowMouse = false;
+        setFollowMouse(false);
+        //isFollowMouse = false;
         createPieces.mouseIsHolding = false;
         createPieces.mouseIsPlaced = false;
     }

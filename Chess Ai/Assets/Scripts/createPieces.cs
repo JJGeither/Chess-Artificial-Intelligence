@@ -666,7 +666,18 @@ public class createPieces : MonoBehaviour
         }
     }
 
- 
+    public List<int> getPieces(int color) //returns an int array of all pieces
+    {
+        List<int> pieces = new List<int>(64);
+        for (int i = 0; i < 64; i++)
+        {
+            if (chessCoordinates[i].getColor() == color)
+            {
+                pieces.Add(i);
+            }
+        }
+        return pieces;
+    }
 
     public void addValidMovement(int pos, int checkPos)
     {
