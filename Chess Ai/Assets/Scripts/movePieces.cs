@@ -14,17 +14,23 @@ public class movePieces : MonoBehaviour
 
     private createPieces createPieces;
     private userInterface userInterface;
+    private artIntelligence artIntelligence;
 
     //follower object
     public GameObject piecePrefab;
     public GameObject newPiece;
-   
+
+    //Stack of moves
+    Stack moveHistory = new Stack();
+    
+
 
     // Start is called before the first frame update
     void Start()
     {
         createPieces = GameObject.Find("PieceHandler").GetComponent<createPieces>();
         userInterface = GameObject.Find("PieceHandler").GetComponent<userInterface>();
+        artIntelligence = GameObject.Find("PieceHandler").GetComponent<artIntelligence>();
     }
 
     // Update is called once per frame
@@ -40,10 +46,8 @@ public class movePieces : MonoBehaviour
 
     private void OnMouseDown()
     {
-        Debug.Log("Check Status: " + createPieces.getCheckStatus());
-        Debug.Log("Turn: " + createPieces.getTurn());
         int selectedTurn = createPieces.chessCoordinates[position].getColor();
-        if (selectedTurn == createPieces.getTurn() || createPieces.getTurn() == -1)    //if turn is -1, able to move any piece however
+        if (selectedTurn == createPieces.getTurn() && selectedTurn != artIntelligence.getColor())    //if turn is -1, able to move any piece however
         {
             //if the mouse is not holding anything and not selecting an empty space
             if (!createPieces.mouseIsHolding && !createPieces.getCoordinateEmpty(position))
@@ -72,19 +76,20 @@ public class movePieces : MonoBehaviour
             }
         }
 
-            //replaces the pieces only when the mouse is holding unto something
-            if (createPieces.mouseIsHolding)
+        //replaces the pieces only when the mouse is holding unto something
+        if (createPieces.mouseIsHolding)
+        {
+            if (createPieces.mouseHolding == position)  //cancels if click on original tile
             {
-                if (createPieces.mouseHolding == position)  //cancels if click on original tile
-                {
-                    cancelMove();
-                    return;
-                }
-                else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
-                {
-                    move(createPieces.mouseHolding, position); //moves pieces
-                }
-            }  
+                cancelMove();
+                return;
+            }
+            else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
+            {
+                move(createPieces.mouseHolding, position); //moves pieces
+                swapTurns();
+            }
+        }
     }
 
     public void move(int fromPos, int toPos)
@@ -102,13 +107,92 @@ public class movePieces : MonoBehaviour
             userInterface.drawPawnPromotion();
             wait = true;    //used to wait to select promotion for pawn 
         }
-        swapTurns();    //switches whos turn it is
+        //swapTurns();    //switches whos turn it is
         updateKingPos();
         createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
         createPieces.setCheckStatus(createPieces.evaluateCheckmate());
         createPieces.nullifyValidity();
-        Debug.Log("Check Status: " + createPieces.getCheckStatus());
         return;
+    }
+
+    public void move(Move move)
+    {
+        removeEnPassantPiece();
+        createPieces.replacePiece(move.getTo(), move.getFrom());
+        reducePawnRange();
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())
+        {
+            //knight = 2
+            //bishop = 3
+            //rook = 4
+            //queen = 6
+            createPieces.chessCoordinates[position].isValidMovement = false;
+            userInterface.drawPawnPromotion();
+            wait = true;    //used to wait to select promotion for pawn 
+        }
+        //swapTurns();    //switches whos turn it is
+        updateKingPos();
+        createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        createPieces.nullifyValidity();
+        return;
+    }
+
+    /*public void moveTemp(int fromPos, int toPos)
+    {
+        removeEnPassantPiece();
+        createPieces.replacePieceTemp(toPos, fromPos);
+        reducePawnRange();
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())
+        {
+            //knight = 2
+            //bishop = 3
+            //rook = 4
+            //queen = 6
+            createPieces.chessCoordinates[position].isValidMovement = false;
+            userInterface.drawPawnPromotion();
+            wait = true;    //used to wait to select promotion for pawn 
+        }
+        //swapTurns();    //switches whos turn it is
+        updateKingPos();
+        createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        createPieces.nullifyValidity();
+        return;
+    }
+
+    public void moveTemp(Move move)
+    {
+        removeEnPassantPiece();
+        createPieces.replacePieceTemp(move.getTo(), move.getFrom());
+        reducePawnRange();
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())
+        {
+            //knight = 2
+            //bishop = 3
+            //rook = 4
+            //queen = 6
+            createPieces.chessCoordinates[position].isValidMovement = false;
+            userInterface.drawPawnPromotion();
+            wait = true;    //used to wait to select promotion for pawn 
+        }
+        //swapTurns();    //switches whos turn it is
+        updateKingPos();
+        createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        createPieces.nullifyValidity();
+        return;
+    }
+    */
+
+    void addPastMove(movePieces.Move move)  //adds a move to the stack of past moves
+    {
+        moveHistory.Push(move);
+    }
+
+    void revertMove()
+    {
+
     }
 
     void waitForPromotionSelection()
@@ -180,8 +264,9 @@ public class movePieces : MonoBehaviour
         {
             emptyPiece(createPieces.chessCoordinates[position].getSpecialMovementPos());    //will not have a destination
             createPieces.chessCoordinates[position].setSpecialMovement(false);
-           // createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
-        } else if (createPieces.chessCoordinates[position].isSpecialMovement() && piece.getSpecialMovementType() == 5) //used for castling
+            // createPieces.chessCoordinates[position].setMoveTwoLastTurn(true);
+        }
+        else if (createPieces.chessCoordinates[position].isSpecialMovement() && piece.getSpecialMovementType() == 5) //used for castling
         {
             createPieces.replacePiece(createPieces.chessCoordinates[position].getSpecialMovementDestinationPos(), createPieces.chessCoordinates[position].getSpecialMovementPos());  //will have a destination
             createPieces.chessCoordinates[position].setSpecialMovement(false);
@@ -211,14 +296,14 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    
+
 
     void emptyPiece(int pos)    //sets piece at position to new empty
     {
         createPieces.chessCoordinates[pos] = new createPieces.Empty(pos);
         GameObject obj = createPieces.pieceObjects[pos];
         obj.GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[0];
-        
+
     }
 
     void cancelMove()   //cancels the move when selecting original square
@@ -269,15 +354,73 @@ public class movePieces : MonoBehaviour
         }
     }
 
-    void swapTurns()
+    public void swapTurns()
     {
         if (createPieces.getTurn() == 0)
         {
             createPieces.setTurn(1);
-        }   
+        }
         else if (createPieces.getTurn() == 1)
         {
-            createPieces.setTurn(0);    
-        }     
+            createPieces.setTurn(0);
+        }
+    }
+
+
+    //FIXS
+    public List<Move> generateMoves(int color) //returns a list of Moves that a color can make
+    {
+        List<Move> killme = new List<Move>(100);
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        foreach (int piece in createPieces.getPieces(color))    //cycles throughout all team pieces and adds children of all the movements that moving team can make
+        {
+            createPieces.evaluateCheckMoves(createPieces.getCheckStatus(), piece);
+            List<int> temp = createPieces.chessCoordinates[piece].getValidMovementList();
+            foreach (int poop in temp)
+            {
+                killme.Add(new Move(piece, poop));
+            }
+            createPieces.nullifyValidity();
+        }
+        return killme;
+    }
+   
+    public class Move
+    {
+        int fromPosition;
+        int toPosition;
+        int color;
+        int score; //used for ordering moves
+
+        public Move(int fromPos, int toPos)
+        {
+            fromPosition = fromPos;
+            toPosition = toPos;
+            score = 0;
+        }
+
+        Move()
+        {
+        }
+
+        public void setScore(int newScore)
+        {
+            score = newScore;
+        }
+
+        public int getScore()
+        {
+            return score;
+        }
+
+        public int getTo()
+        {
+            return toPosition;
+        }
+
+        public int getFrom()
+        {
+            return fromPosition;
+        }
     }
 }

@@ -141,6 +141,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: 0
+  depth: 6
 --- !u!1001 &400690650
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -456,7 +457,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5073858654027239956, guid: f01f2251a648ffb49a36c8d56bfae5f5, type: 3}
       propertyPath: FENString
-      value: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
+      value: r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R
       objectReference: {fileID: 0}
     - target: {fileID: 8993768994764595678, guid: f01f2251a648ffb49a36c8d56bfae5f5, type: 3}
       propertyPath: m_RootOrder
