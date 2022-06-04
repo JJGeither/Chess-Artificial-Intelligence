@@ -29,14 +29,15 @@ public class artIntelligence : MonoBehaviour
         if (createPieces.getTurn() == color)
         {
             Stopwatch timer = Stopwatch.StartNew();
-            //movePieces.move(negaMaxRoot(depth, color, double.NegativeInfinity, double.PositiveInfinity));
+            movePieces.move(negaMaxRoot(depth, color, double.NegativeInfinity, double.PositiveInfinity));
             timer.Stop();
             TimeSpan timespan = timer.Elapsed;
 
             UnityEngine.Debug.Log(timespan);
+            movePieces.swapTurns();
         }
 
-    }
+     }
 
     public int getDepth()
     {
@@ -78,6 +79,7 @@ public class artIntelligence : MonoBehaviour
     }
     movePieces.Move negaMaxRoot(int depth, int color, double alpha, double beta)
     {
+
         int[] oppColor = { 1, 0 };  //color of the attacking team
         if (depth == 0)
             return null;
@@ -102,18 +104,19 @@ public class artIntelligence : MonoBehaviour
         {
 
             //trstrdt
-            int kingInitPos = createPieces.kingPos[createPieces.chessCoordinates[move.getFrom()].getColor()];  //sets the initial king position to store when moving the king
-            createPieces.chessPieceClass[] temp2 = { createPieces.chessCoordinates[move.getFrom()], createPieces.chessCoordinates[move.getTo()] }; //stores the initla positions of the pieces
+            int kingInitPos = createPieces.kingPos[color];  //sets the initial king position to store when moving the king
+            createPieces.chessPieceClass[] temp2 = { createPieces.chessCoordinates[move.getFromPos()], createPieces.chessCoordinates[move.getToPos()] }; //stores the initla positions of the pieces
 
-            movePieces.move(move);  //moves piece
+            movePieces.moveTest(move);  //moves piece
             double evaluation = -negaMax(depth - 1, oppColor[color], -beta, -alpha);
             bestEvaluation = Math.Max(evaluation, bestEvaluation);
 
             //undo moves
-            createPieces.chessCoordinates[move.getFrom()] = temp2[0];
-            createPieces.chessCoordinates[move.getTo()] = temp2[1];
-            createPieces.pieceObjects[move.getFrom()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[0].getSprite()];
-            createPieces.pieceObjects[move.getTo()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[1].getSprite()];
+            //movePieces.revertMove(move);
+            createPieces.chessCoordinates[move.getFromPos()] = temp2[0];
+            createPieces.chessCoordinates[move.getToPos()] = temp2[1];
+            createPieces.pieceObjects[move.getFromPos()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[0].getSprite()];
+            createPieces.pieceObjects[move.getToPos()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[1].getSprite()];
             createPieces.kingPos[color] = kingInitPos;   //moves the king back to it's initial position
 
             if (evaluation > alpha)
@@ -148,21 +151,22 @@ public class artIntelligence : MonoBehaviour
 
         double bestEvaluation = double.NegativeInfinity;
 
-        foreach(movePieces.Move move in moves)
+        foreach (movePieces.Move move in moves)
         {
             //trstrdt
-            int kingInitPos = createPieces.kingPos[createPieces.chessCoordinates[move.getFrom()].getColor()];  //sets the initial king position to store when moving the king
-            createPieces.chessPieceClass[] temp2 = { createPieces.chessCoordinates[move.getFrom()], createPieces.chessCoordinates[move.getTo()] }; //stores the initla positions of the pieces
+            int kingInitPos = createPieces.kingPos[color];  //sets the initial king position to store when moving the king
+            createPieces.chessPieceClass[] temp2 = { createPieces.chessCoordinates[move.getFromPos()], createPieces.chessCoordinates[move.getToPos()] }; //stores the initla positions of the pieces
 
-            movePieces.move(move);  //moves piece
+            movePieces.moveTest(move);  //moves piece
             double evaluation = -negaMax(depth - 1, oppColor[color], -beta, -alpha);
             bestEvaluation = Math.Max(evaluation, bestEvaluation);
 
             //undo moves
-            createPieces.chessCoordinates[move.getFrom()] = temp2[0];
-            createPieces.chessCoordinates[move.getTo()] = temp2[1];
-            createPieces.pieceObjects[move.getFrom()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[0].getSprite()];
-            createPieces.pieceObjects[move.getTo()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[1].getSprite()];
+            //movePieces.revertMove(move);
+            createPieces.chessCoordinates[move.getFromPos()] = temp2[0];
+            createPieces.chessCoordinates[move.getToPos()] = temp2[1];
+            createPieces.pieceObjects[move.getFromPos()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[0].getSprite()];
+            createPieces.pieceObjects[move.getToPos()].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[temp2[1].getSprite()];
             createPieces.kingPos[color] = kingInitPos;   //moves the king back to it's initial position
 
             if (evaluation >= beta)
@@ -174,7 +178,7 @@ public class artIntelligence : MonoBehaviour
         }
 
         return alpha;
-    
+
     }
 
     void orderMoves(ref List<movePieces.Move> moveList) //orders moves with the highest score moves going first
@@ -185,18 +189,18 @@ public class artIntelligence : MonoBehaviour
 
 
             int score = 0;
-            int moveColor = createPieces.chessCoordinates[move.getFrom()].getColor();
-            int captureColor = createPieces.chessCoordinates[move.getTo()].getColor();
+            int moveColor = createPieces.chessCoordinates[move.getFromPos()].getColor();
+            int captureColor = createPieces.chessCoordinates[move.getToPos()].getColor();
 
             //prioritizes if a piece of lower value captures a piece of higher value
-            if (createPieces.chessCoordinates[move.getTo()].getValue() != 0)  //if not moving to empty space
-                score = 10 * createPieces.chessCoordinates[move.getTo()].getValue() - createPieces.chessCoordinates[move.getFrom()].getValue();
+            if (createPieces.chessCoordinates[move.getToPos()].getValue() != 0)  //if not moving to empty space
+                score = 10 * createPieces.chessCoordinates[move.getToPos()].getValue() - createPieces.chessCoordinates[move.getFromPos()].getValue();
 
             //create one for pawn promotion
 
             //create one for losing a piece
 
-            
+
             move.setScore(score);
         }
 

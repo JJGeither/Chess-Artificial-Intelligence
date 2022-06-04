@@ -141,7 +141,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: 0
-  depth: 6
+  depth: 4
 --- !u!1001 &400690650
 PrefabInstance:
   m_ObjectHideFlags: 0

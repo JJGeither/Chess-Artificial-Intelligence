@@ -13,6 +13,7 @@ public class createPieces : MonoBehaviour
     private int playerTurn = 1;
     public string FENString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     public GameObject piecePrefab;
+    private movePieces movePieces;
     public chessPieceClass[] chessCoordinates = new chessPieceClass[64];
     public GameObject[] pieceObjects = new GameObject[64];  //used for directly referencing object
     public int Scale;
@@ -100,6 +101,7 @@ public class createPieces : MonoBehaviour
     void Start()
     {
         userInterface = GameObject.Find("PieceHandler").GetComponent<userInterface>();
+        movePieces = GameObject.Find("ChessPiece").GetComponent<movePieces>();
         setUpPieces(FENString);
         numToEdge();
         drawPieces();
@@ -315,6 +317,7 @@ public class createPieces : MonoBehaviour
         for (int i = 0; i < movements.Count; i++)  //sees if can move piece without causing check
         {
             chessPieceClass[] temp2 = { chessCoordinates[pos], chessCoordinates[movements[i]] }; //stores the initla positions of the pieces
+            movePieces.Move test = new movePieces.Move(chessCoordinates[movements[i]], chessCoordinates[pos]);
             replacePieceTemp(movements[i], pos);    //moves pos to movements
 
             for (int atkPos = 0; atkPos <= 63; atkPos++)   //checks all the responses of the attacking team
@@ -332,14 +335,18 @@ public class createPieces : MonoBehaviour
             }
 
             //revert change that was made by replace piece
-            chessCoordinates[pos] = temp2[0];
-            chessCoordinates[movements[i]] = temp2[1];
-            pieceObjects[pos].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[0].getSprite()];
-            pieceObjects[movements[i]].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[1].getSprite()];
+
+            movePieces.revertMove(test);
+            
+            //chessCoordinates[pos] = temp2[0];
+            //chessCoordinates[movements[i]] = temp2[1];
+            //pieceObjects[pos].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[0].getSprite()];
+            //pieceObjects[movements[i]].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[1].getSprite()];
             kingPos[color] = kingInitPos;   //moves the king back to it's initial position
 
         }
 
+        setValidMovementWithList(pos, list);
         return;
 
     }
@@ -386,16 +393,12 @@ public class createPieces : MonoBehaviour
 
         if (checkColor == -1)   //if no check was found ends the check
         {
-            //Debug.Log("No Check");
-            //isCheckStatus[chessCoordinates[noCheckPiecePos].getColor()] = noCheck;
-            //isCheckStatus[checkColor] = noCheck;
             nullifyValidity();
             return -1;
         }
         else
         {
             isCheckStatus[checkColor] = check;    //sets colors CHECK to true
-            //Debug.Log("Stat: " + checkColor + " " + isCheckStatus[checkColor]);
         }
 
         //now determines if there is a CHECKMATE
@@ -409,7 +412,7 @@ public class createPieces : MonoBehaviour
             pieceCheckValue = 0;
             if (!chessCoordinates[defPos].isEmpty() && chessCoordinates[defPos].getColor() == checkColor) //checks all move the defending color can do to respond
             {
-                chessCoordinates[defPos].clearValidMovementList(); ; //clears all previous valid movements
+                chessCoordinates[defPos].clearValidMovementList(); //clears all previous valid movements
                 checkValidity(defPos);   //re-evaluates what movements the piece can make
                 List<int> list = new List<int>(chessCoordinates[defPos].getValidMovementList()); //creates a list of all the possible movmenet options a piece can make
                 List<int> checkMovements = new List<int>(); //has a list of all the movements that the defending team can make in order to get out of check
@@ -475,7 +478,10 @@ public class createPieces : MonoBehaviour
         int color = chessCoordinates[i].getColor(); //gets the color of the defending team
         int[] oppColor = { 1, 0 };  //color of the attacking team
         int checkValue = -1;
-        chessPieceClass[] temp2 = { chessCoordinates[i], chessCoordinates[k] }; //stores the initla positions of the pieces
+        
+        movePieces.Move test = new movePieces.Move(chessCoordinates[i], chessCoordinates[k]);
+
+        //chessPieceClass[] temp2 = { chessCoordinates[i], chessCoordinates[k] }; //stores the initla positions of the pieces
         replacePieceTemp(k, i); //moves a piece to one of it's valid movements
         nullifyValidity();  //resets valid movements
 
@@ -488,11 +494,29 @@ public class createPieces : MonoBehaviour
                     break;
             }
         }
+
+        nullifyValidity();
         //revert change that was made by replace piece
-        chessCoordinates[i] = temp2[0];
-        chessCoordinates[k] = temp2[1];
-        pieceObjects[i].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[0].getSprite()];
-        pieceObjects[k].GetComponent<SpriteRenderer>().sprite = pieceSheet[temp2[1].getSprite()];
+        //movePieces.revertMove(test);
+
+        int fromPos = test.getFromPos();
+        int toPos = test.getToPos();
+
+        chessCoordinates[i].setTo(test.getFrom());
+        chessCoordinates[k].setTo(test.getTo());
+
+        //pieceObjects[fromPos].GetComponent<SpriteRenderer>().sprite = pieceSheet[test.getTo().getSprite()];
+        //pieceObjects[toPos].GetComponent<SpriteRenderer>().sprite = pieceSheet[test.getFrom().getSprite()];
+
+        //chessCoordinates[i] = test.getFrom();
+        //chessCoordinates[k] = test.getTo();
+
+        //chessCoordinates[i].setPosition(test.getFromPos());
+        //chessCoordinates[k].setPosition(test.getToPos());
+
+        //pieceObjects[i].GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[i].getSprite()];
+        //pieceObjects[k].GetComponent<SpriteRenderer>().sprite = pieceSheet[chessCoordinates[k].getSprite()];
+
         kingPos[color] = kingInitPos;   //moves the king back to it's initial position
         return checkValue;    //returns value of checkmate
     }
@@ -506,7 +530,7 @@ public class createPieces : MonoBehaviour
         pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
         pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
         movePiece(posA, posB);
-        mouseIsPlaced = true;
+        //mouseIsPlaced = true;
     }
 
     public void replacePieceTemp(int posA, int posB)     //Sets the piece at posB to the piece at posA and empties posA, B ---> A, but doesn't place piece down
@@ -515,8 +539,9 @@ public class createPieces : MonoBehaviour
             kingPos[chessCoordinates[posB].getColor()] = posA;
 
         int holdingSprite = getCoordinateSprite(posB);
-        pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
-        pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
+        //maybe change???
+        //pieceObjects[posA].GetComponent<SpriteRenderer>().sprite = pieceSheet[holdingSprite];
+        //pieceObjects[posB].GetComponent<SpriteRenderer>().sprite = pieceSheet[0];
         movePiece(posA, posB);
 
     }
@@ -524,10 +549,11 @@ public class createPieces : MonoBehaviour
     //moves pieceEmpty position into pieceReplace and empties pieceEmpty afterwards
     public void movePiece(int pieceReplace, int pieceEmpty)
     {
-        chessPieceClass temp = chessCoordinates[pieceEmpty];
+        chessPieceClass temp = new Empty(pieceEmpty);
         chessCoordinates[pieceEmpty] = new Empty(pieceEmpty);
-        chessCoordinates[pieceReplace] = temp;
-        chessCoordinates[pieceReplace].setPosition(pieceReplace);
+        chessCoordinates[pieceReplace].setTo(temp);
+        //chessCoordinates[pieceReplace] = temp;
+        //chessCoordinates[pieceReplace].setPosition(pieceReplace);
     }
 
     public void kingCastling(int pos)   //movement for king to castle
@@ -752,6 +778,18 @@ public class createPieces : MonoBehaviour
 
         }
 
+        public void setTo(chessPieceClass pieceClass) //sets a piece class to another move
+        {
+            Debug.Log(getType() + " " + pieceClass.getType());
+            setPosition(pieceClass.getPosition());
+            setColor(pieceClass.getColor());
+            setType(pieceClass.getType());
+            setSprite(pieceClass.getType(), pieceClass.getColor());
+            setEmpty(pieceClass.empty);
+            setDirection(pieceClass.getDirections());
+            isValidMovement = pieceClass.isValidMovement;
+        }
+
         //setters
         public void setColor(int newColor)
         {
@@ -761,6 +799,11 @@ public class createPieces : MonoBehaviour
         public void setPosition(int tilePosition)
         {
             position = tilePosition;
+        }
+
+        public int getPosition()
+        {
+            return position;
         }
 
         public void addValidMovementList(int pos)   //makes a piece able to move to pos tile
@@ -846,6 +889,9 @@ public class createPieces : MonoBehaviour
 
         public void setDirection(int[] directions)
         {
+            if (directions == null)
+                return;
+
             directionsAllowed = new int[directions.Length];
             directions.CopyTo(directionsAllowed, 0);
         }

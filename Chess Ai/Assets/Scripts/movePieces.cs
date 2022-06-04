@@ -21,8 +21,8 @@ public class movePieces : MonoBehaviour
     public GameObject newPiece;
 
     //Stack of moves
-    Stack moveHistory = new Stack();
-    
+    Stack<Move> moveHistory = new Stack<Move>();
+
 
 
     // Start is called before the first frame update
@@ -79,6 +79,7 @@ public class movePieces : MonoBehaviour
         //replaces the pieces only when the mouse is holding unto something
         if (createPieces.mouseIsHolding)
         {
+            Move test = new Move(createPieces.chessCoordinates[createPieces.mouseHolding], createPieces.chessCoordinates[position]);
             if (createPieces.mouseHolding == position)  //cancels if click on original tile
             {
                 cancelMove();
@@ -86,7 +87,8 @@ public class movePieces : MonoBehaviour
             }
             else if (createPieces.chessCoordinates[position].isValidMovement) //moves piece
             {
-                move(createPieces.mouseHolding, position); //moves pieces
+                move(test); //moves pieces
+                createPieces.mouseIsPlaced = true;
                 swapTurns();
             }
         }
@@ -117,8 +119,33 @@ public class movePieces : MonoBehaviour
 
     public void move(Move move)
     {
+        addMoveHistory(move);
         removeEnPassantPiece();
-        createPieces.replacePiece(move.getTo(), move.getFrom());
+        createPieces.replacePiece(move.getToPos(), move.getFromPos());
+        reducePawnRange();
+        if (createPieces.chessCoordinates[position].isPawnAtEnd())
+        {
+            //knight = 2
+            //bishop = 3
+            //rook = 4
+            //queen = 6
+            createPieces.chessCoordinates[position].isValidMovement = false;
+            userInterface.drawPawnPromotion();
+            wait = true;    //used to wait to select promotion for pawn 
+        }
+        //swapTurns();    //switches whos turn it is
+        updateKingPos();
+        createPieces.chessCoordinates[position].setMoved(true);     //sets the piece to of moved
+        createPieces.setCheckStatus(createPieces.evaluateCheckmate());
+        createPieces.nullifyValidity();
+        return;
+    }
+
+    public void moveTest(Move move)
+    {
+        addMoveHistory(move);
+        removeEnPassantPiece();
+        createPieces.replacePieceTemp(move.getToPos(), move.getFromPos());
         reducePawnRange();
         if (createPieces.chessCoordinates[position].isPawnAtEnd())
         {
@@ -185,15 +212,36 @@ public class movePieces : MonoBehaviour
     }
     */
 
-    void addPastMove(movePieces.Move move)  //adds a move to the stack of past moves
+    public void addMoveHistory(Move move)
     {
         moveHistory.Push(move);
     }
 
-    void revertMove()
+    public void revertMove()
     {
+        Move test = moveHistory.Pop();
+        int toPos = test.getToPos();
+        int fromPos = test.getFromPos();
+        
+        createPieces.chessCoordinates[toPos] = test.getFrom();
+        createPieces.chessCoordinates[fromPos] = test.getTo();
 
+        createPieces.pieceObjects[fromPos].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[test.getFrom().getSprite()];
+        createPieces.pieceObjects[toPos].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[test.getTo().getSprite()];
     }
+
+    public void revertMove(Move test)
+    {
+        int toPos = test.getToPos();
+        int fromPos = test.getFromPos();
+
+        createPieces.chessCoordinates[fromPos].setTo(test.getFrom());
+        createPieces.chessCoordinates[toPos].setTo(test.getTo());
+
+        //createPieces.pieceObjects[fromPos].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[test.getFrom().getSprite()];
+        //createPieces.pieceObjects[toPos].GetComponent<SpriteRenderer>().sprite = createPieces.pieceSheet[test.getTo().getSprite()];
+    }
+
 
     void waitForPromotionSelection()
     {
@@ -366,11 +414,9 @@ public class movePieces : MonoBehaviour
         }
     }
 
-
-    //FIXS
     public List<Move> generateMoves(int color) //returns a list of Moves that a color can make
     {
-        List<Move> killme = new List<Move>(100);
+        List<Move> listMoves = new List<Move>(100);
         createPieces.setCheckStatus(createPieces.evaluateCheckmate());
         foreach (int piece in createPieces.getPieces(color))    //cycles throughout all team pieces and adds children of all the movements that moving team can make
         {
@@ -378,17 +424,19 @@ public class movePieces : MonoBehaviour
             List<int> temp = createPieces.chessCoordinates[piece].getValidMovementList();
             foreach (int poop in temp)
             {
-                killme.Add(new Move(piece, poop));
+                listMoves.Add(new Move(createPieces.chessCoordinates[piece], createPieces.chessCoordinates[poop]));
             }
             createPieces.nullifyValidity();
         }
-        return killme;
+        return listMoves;
     }
-   
+
+
     public class Move
     {
-        int fromPosition;
-        int toPosition;
+
+        createPieces.chessPieceClass fromObj, toObj;
+        int fromPosition, toPosition;
         int color;
         int score; //used for ordering moves
 
@@ -397,6 +445,14 @@ public class movePieces : MonoBehaviour
             fromPosition = fromPos;
             toPosition = toPos;
             score = 0;
+        }
+
+        public Move(createPieces.chessPieceClass fromPiece, createPieces.chessPieceClass toPiece)
+        {
+            fromObj = fromPiece;
+            toObj = toPiece;
+            fromPosition = fromObj.getPosition();
+            toPosition = toObj.getPosition();
         }
 
         Move()
@@ -413,14 +469,24 @@ public class movePieces : MonoBehaviour
             return score;
         }
 
-        public int getTo()
+        public int getToPos()
         {
             return toPosition;
         }
 
-        public int getFrom()
+        public int getFromPos()
         {
             return fromPosition;
+        }
+
+        public createPieces.chessPieceClass getTo()
+        {
+            return toObj;
+        }
+
+        public createPieces.chessPieceClass getFrom()
+        {
+            return fromObj;
         }
     }
 }
